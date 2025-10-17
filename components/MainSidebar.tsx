@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 // FIX: Changed import path to point to .tsx file.
-import { cn } from '../lib/utils.tsx';
+import { cn } from '../lib/utils';
 
 // Icons
 const MusicIcon = (props: React.SVGProps<SVGSVGElement>) => (

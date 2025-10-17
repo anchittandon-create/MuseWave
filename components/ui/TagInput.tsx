@@ -3,7 +3,7 @@
 
 import React, { useState, useRef, KeyboardEvent } from 'react';
 // FIX: Changed import path to point to .tsx file.
-import { cn } from '../../lib/utils.tsx';
+import { cn } from '../../lib/utils';
 
 interface TagInputProps {
   value: string[];
