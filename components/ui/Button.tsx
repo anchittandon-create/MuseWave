@@ -3,7 +3,7 @@
 
 import React from 'react';
 // FIX: Changed import path to point to .tsx file.
-import { cn } from '../../lib/utils.tsx';
+import { cn } from '../../lib/utils';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'default' | 'destructive' | 'outline' | 'ghost';

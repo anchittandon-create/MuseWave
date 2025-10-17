@@ -7,7 +7,7 @@ import type { JobLog } from '../lib/types';
 import PageHeader from '../components/PageHeader';
 import Button from '../components/ui/Button';
 // FIX: Changed import path to point to .tsx file.
-import { cn } from '../lib/utils.tsx';
+import { cn } from '../lib/utils';
 
 // Icons
 const RefreshCwIcon = (props: React.SVGProps<SVGSVGElement>) => (

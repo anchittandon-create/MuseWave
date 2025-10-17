@@ -3,7 +3,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 // FIX: Changed import path to point to .tsx file.
-import { cn } from '../../lib/utils.tsx';
+import { cn } from '../../lib/utils';
 
 interface SliderProps {
   value: number[];

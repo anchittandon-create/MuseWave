@@ -5,7 +5,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Button from './ui/Button';
 import type { Job, VideoStyle } from '../lib/types';
 // FIX: Changed import path to point to .tsx file.
-import { cn } from '../lib/utils.tsx';
+import { cn } from '../lib/utils';
 import Slider from './ui/Slider';
 
 // Icons
@@ -78,6 +78,63 @@ const MusicPlayer = ({ job, audioUrl, videoUrls }: MusicPlayerProps) => {
     if(videoRef.current) videoRef.current.currentTime = 0;
   }, [audioUrl, videoUrls]);
 
+  // Convert data: audio URIs to object URLs to improve metadata loading reliability
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    let objectUrl: string | null = null;
+
+    const onLoadedMetadata = () => {
+      if (!isNaN(audio.duration)) {
+        setDuration(audio.duration);
+      }
+      setCurrentTime(audio.currentTime || 0);
+    };
+
+    audio.addEventListener('loadedmetadata', onLoadedMetadata);
+
+    if (audioUrl && audioUrl.startsWith && audioUrl.startsWith('data:audio')) {
+      try {
+        const base64 = audioUrl.split(',')[1] || '';
+        let bytes;
+        if (typeof atob === 'function') {
+          const binary = atob(base64);
+          const len = binary.length;
+          bytes = new Uint8Array(len);
+          for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+        } else if (typeof Buffer !== 'undefined') {
+          bytes = Uint8Array.from(Buffer.from(base64, 'base64'));
+        } else {
+          throw new Error('No base64 decoder available');
+        }
+        const blob = new Blob([bytes], { type: 'audio/wav' });
+        objectUrl = URL.createObjectURL(blob);
+        audio.src = objectUrl;
+        // Ensure browser begins loading the media and fires loadedmetadata
+        try { audio.load(); } catch (e) { /* ignore */ }
+        // If metadata is already available synchronously, set it now
+        if (!isNaN(audio.duration) && audio.duration > 0) {
+          setDuration(audio.duration);
+        }
+      } catch (e) {
+        console.warn('Failed to convert data URI to Blob URL', e);
+        // fallback: leave audio.src as the data URI
+        audio.src = audioUrl;
+      }
+    } else if (audioUrl) {
+      audio.src = audioUrl;
+      try { audio.load(); } catch (e) { /* ignore */ }
+      if (!isNaN(audio.duration) && audio.duration > 0) setDuration(audio.duration);
+    }
+
+    return () => {
+      audio.removeEventListener('loadedmetadata', onLoadedMetadata);
+      if (objectUrl) {
+        try { URL.revokeObjectURL(objectUrl); } catch (e) { /**/ }
+      }
+    };
+  }, [audioUrl]);
+
   const togglePlayPause = () => {
     const audio = audioRef.current;
     const video = videoRef.current;
@@ -125,7 +182,13 @@ const MusicPlayer = ({ job, audioUrl, videoUrls }: MusicPlayerProps) => {
       {/* Media Elements: Audio is the source of truth */}
       <audio ref={audioRef} src={audioUrl} preload="auto" loop={!!activeVideoUrl} />
       {activeVideoUrl && (
-         <video ref={videoRef} src={activeVideoUrl} className="w-full rounded-md aspect-video bg-black" muted loop playsInline key={activeVideoStyle} />
+        // If the orchestrator returned an image (SVG) as a data URI, render it as an <img>.
+        // Video elements cannot play images — older mock code used text data URIs which won't render.
+        activeVideoUrl.startsWith && activeVideoUrl.startsWith('data:image') ? (
+          <img src={activeVideoUrl} alt={String(activeVideoStyle || '')} className="w-full rounded-md aspect-video bg-black object-cover" />
+        ) : (
+          <video ref={videoRef} src={activeVideoUrl} className="w-full rounded-md aspect-video bg-black" muted loop playsInline key={activeVideoStyle} />
+        )
       )}
        {availableVideoStyles.length > 1 && (
         <div className="flex items-center justify-center gap-2 rounded-md bg-muted p-1">

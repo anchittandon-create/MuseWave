@@ -10,7 +10,7 @@ export type JobStatus =
   | 'error'
   | 'cancelled';
 
-export type VideoStyle = 'lyrical' | 'official' | 'abstract';
+export type VideoStyle = 'lyric' | 'official' | 'abstract';
 
 export type DrumPattern = {
   kick: (number | null)[];
@@ -109,6 +109,7 @@ export type Job = {
   genres: string[];
   duration: number;
   artists: string[];
+  languages?: string[];
   lyrics: string;
   generateVideo: boolean;
   videoStyles: VideoStyle[];

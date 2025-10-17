@@ -8,7 +8,7 @@ import HomePage from './pages/HomePage';
 import DashboardPage from './pages/DashboardPage';
 import { Toaster } from './components/Toaster';
 // FIX: Changed import path to point to .tsx file.
-import { ToastProvider } from './hooks/useToast.tsx';
+import { ToastProvider } from './hooks/useToast';
 
 function App() {
   return (

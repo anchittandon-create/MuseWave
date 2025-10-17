@@ -3,16 +3,16 @@
 
 import React from 'react';
 // FIX: Changed import path to point to .tsx file.
-import { GENRES } from '../constants.tsx';
+import { GENRES } from '../constants';
 import Button from './ui/Button';
 import TagInput from './ui/TagInput';
 import Slider from './ui/Slider';
 import Switch from './ui/Switch';
 // FIX: Changed import path to point to .tsx file.
-import { useToast } from '../hooks/useToast.tsx';
+import { useToast } from '../hooks/useToast';
 import type { VideoStyle } from '../lib/types';
 // FIX: Changed import path to point to .tsx file.
-import { cn } from '../lib/utils.tsx';
+import { cn } from '../lib/utils';
 
 // Icon for AI suggestions
 const WandIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -29,11 +29,12 @@ export type FormState = {
   duration: number;
   artists: string[];
   lyrics: string;
+  languages: string[];
   generateVideo: boolean;
   videoStyles: VideoStyle[];
 };
 
-export type EnhancingField = 'prompt' | 'genres' | 'artists' | 'lyrics' | null;
+export type EnhancingField = 'prompt' | 'genres' | 'artists' | 'lyrics' | 'languages' | null;
 
 interface MuseForgeFormProps {
   formState: FormState;
@@ -90,6 +91,19 @@ const MuseForgeForm = ({
   };
 
   const allGenres = GENRES.map(g => g.label);
+  const languageOptions = [
+    'English',
+    'Hindi',
+    'Punjabi',
+    'Tamil',
+    'Telugu',
+    'Bengali',
+    'Spanish',
+    'French',
+    'German',
+    'Japanese',
+    'Korean'
+  ];
 
   const SuggestionButton = ({ field }: { field: EnhancingField }) => (
      <Button
@@ -106,7 +120,7 @@ const MuseForgeForm = ({
   );
 
   const videoOptions: { value: VideoStyle; title: string; description: string }[] = [
-    { value: 'lyrical', title: 'Lyrical Video', description: 'Simple video with synchronized lyrics.' },
+    { value: 'lyrical', title: 'Lyric Video', description: 'Simple video with synchronized lyrics.' },
     { value: 'official', title: 'Official Music Video', description: 'Full video with dynamic visuals.' },
     { value: 'abstract', title: 'Abstract Visualizer', description: 'Beat-reactive, surreal geometric visuals.' }
   ];
@@ -191,11 +205,11 @@ const MuseForgeForm = ({
 
       {/* Lyrics / Vocal Theme */}
       <div className="space-y-2">
-         <div className="flex items-center justify-between">
-            <label htmlFor="lyrics" className="block text-sm font-medium text-gray-300">
-                Lyrics / Vocal Theme (Optional)
-            </label>
-            <SuggestionButton field="lyrics" />
+        <div className="flex items-center justify-between">
+          <label htmlFor="lyrics" className="block text-sm font-medium text-gray-300">
+            Lyrics / Vocal Theme (Optional)
+          </label>
+          <SuggestionButton field="lyrics" />
         </div>
         <p className="text-sm text-gray-500">
           Provide lyrics or a theme for the AI to create a "sung" vocal melody.
@@ -210,66 +224,88 @@ const MuseForgeForm = ({
           placeholder="Verse 1:&#10;Floating through a calm, digital ocean&#10;Chorus:&#10;Under a sky of binary stars..."
         />
       </div>
-      
-        {/* Video Generation Toggle */}
-        <div className="space-y-4 border-t border-border pt-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <label htmlFor="generate-video" className="text-sm font-medium text-gray-300">
-                        Generate Video
-                    </label>
-                    <p className="text-sm text-gray-500">
-                        Enable to create synchronized videos for your track.
-                    </p>
-                </div>
-                <Switch
-                    id="generate-video"
-                    checked={formState.generateVideo}
-                    onCheckedChange={(checked) => handleFieldChange('generateVideo', checked)}
-                    disabled={isLoading}
-                />
-            </div>
 
-            {/* Video Generation Options */}
-            {formState.generateVideo && (
-                 <div className="space-y-2 pt-4 animate-in fade-in duration-300">
-                    <label className="block text-sm font-medium text-gray-300">Video Styles</label>
-                    <p className="text-sm text-gray-500">
-                        Select one or more video styles to generate for your audio track.
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-                        {videoOptions.map((option) => {
-                            const isSelected = formState.videoStyles.includes(option.value);
-                            return (
-                                <button
-                                    type="button"
-                                    key={option.value}
-                                    onClick={() => !isLoading && handleVideoStyleChange(option.value)}
-                                    disabled={isLoading}
-                                    className={cn(
-                                        'flex items-start text-left space-x-3 rounded-md border p-4 transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
-                                        isSelected ? 'border-primary bg-primary/10' : 'border-gray-700 hover:bg-gray-800/50'
-                                    )}
-                                    role="checkbox"
-                                    aria-checked={isSelected}
-                                >
-                                    <div className={cn(
-                                        "flex h-5 w-5 items-center justify-center rounded-sm border mt-0.5",
-                                        isSelected ? 'bg-primary border-primary text-primary-foreground' : 'border-gray-400'
-                                    )}>
-                                        {isSelected && <CheckIcon className="h-4 w-4" />}
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="font-medium">{option.title}</p>
-                                        <p className="text-xs text-muted-foreground mt-1">{option.description}</p>
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
+      {/* Preferred Languages */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label htmlFor="languages" className="block text-sm font-medium text-gray-300">
+            Preferred Vocal Languages
+          </label>
+          <SuggestionButton field="languages" />
         </div>
+        <p className="text-sm text-gray-500">
+          Specify or let the AI suggest languages that complement the vibe and audience.
+        </p>
+        <TagInput
+          value={formState.languages}
+          onChange={(v) => handleFieldChange('languages', v)}
+          placeholder="e.g., English, Hindi"
+          options={languageOptions}
+          disabled={isLoading}
+        />
+      </div>
+      
+      {/* Video Generation Toggle */}
+      <div className="space-y-4 border-t border-border pt-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <label htmlFor="generate-video" className="text-sm font-medium text-gray-300">
+              Generate Video
+            </label>
+            <p className="text-sm text-gray-500">
+              Enable to create synchronized videos for your track.
+            </p>
+          </div>
+          <Switch
+            id="generate-video"
+            checked={formState.generateVideo}
+            onCheckedChange={(checked) => handleFieldChange('generateVideo', checked)}
+            disabled={isLoading}
+          />
+        </div>
+
+        {/* Video Generation Options */}
+        {formState.generateVideo && (
+          <div className="space-y-2 pt-4 animate-in fade-in duration-300">
+            <label className="block text-sm font-medium text-gray-300">Video Styles</label>
+            <p className="text-sm text-gray-500">
+              Select one or more video styles to generate for your audio track.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+              {videoOptions.map((option) => {
+                const isSelected = formState.videoStyles.includes(option.value);
+                return (
+                  <button
+                    type="button"
+                    key={option.value}
+                    onClick={() => !isLoading && handleVideoStyleChange(option.value)}
+                    disabled={isLoading}
+                    className={cn(
+                      'flex items-start text-left space-x-3 rounded-md border p-4 transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+                      isSelected ? 'border-primary bg-primary/10' : 'border-gray-700 hover:bg-gray-800/50'
+                    )}
+                    role="checkbox"
+                    aria-checked={isSelected}
+                  >
+                    <div
+                      className={cn(
+                        'flex h-5 w-5 items-center justify-center rounded-sm border mt-0.5',
+                        isSelected ? 'bg-primary border-primary text-primary-foreground' : 'border-gray-400'
+                      )}
+                    >
+                      {isSelected && <CheckIcon className="h-4 w-4" />}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium">{option.title}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{option.description}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
 
 
       {/* Submit Button */}
