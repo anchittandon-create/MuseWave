@@ -133,6 +133,8 @@ If you need to set environment variables (e.g., `GEMINI_API_KEY`):
 
 **Note**: This project's `vite.config.ts` is configured to read `GEMINI_API_KEY` directly and expose it as `process.env.API_KEY` and `process.env.GEMINI_API_KEY` in the client bundle.
 
+**⚠️ Security Warning**: API keys are exposed in the client-side bundle with this configuration. For production use, consider implementing a backend proxy to handle API calls and keep keys server-side. This prevents unauthorized access and usage of your API keys.
+
 ---
 
 ## Deployment Comparison
