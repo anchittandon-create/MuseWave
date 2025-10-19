@@ -4,9 +4,17 @@
 
 # Run and deploy your AI Studio app
 
-This contains everything you need to run your app locally.
+This contains everything you need to run your app locally and deploy it online.
 
 View your app in AI Studio: https://ai.studio/apps/drive/1kMZ30k-W6zUog4zKeV86ZgVeqFKMkpPz
+
+## 🚀 Get Your Deployment Link
+
+**Already deployed?** Your app should be live at:
+- **GitHub Pages**: https://at-2803.github.io/MuseWave/
+- **Vercel**: Check your [Vercel dashboard](https://vercel.com/dashboard)
+
+**Need to deploy?** See **[DEPLOYMENT.md](DEPLOYMENT.md)** for complete instructions.
 
 ## Run Locally
 
@@ -21,11 +29,18 @@ View your app in AI Studio: https://ai.studio/apps/drive/1kMZ30k-W6zUog4zKeV86Zg
 
 ## Deploying
 
-Vercel (recommended):
+For detailed deployment instructions and how to get your deployment link, see **[DEPLOYMENT.md](DEPLOYMENT.md)**.
 
-- One-click: Import the repository into Vercel and set the build command to `npm run build` and output directory to `dist`.
-- Alternatively, add the provided `vercel.json` (already included) which tells Vercel to use `@vercel/static-build` and serve `dist/`.
+### Quick Start
 
-GitHub Pages:
+**GitHub Pages** (Free):
+- Automatic deployment on push to `main` branch
+- Your link: `https://at-2803.github.io/MuseWave/`
+- Enable in: Settings → Pages → Source: `gh-pages` branch
 
-- A GitHub Actions workflow (`.github/workflows/deploy-gh-pages.yml`) is included which builds and deploys to the `gh-pages` branch on push to `main`.
+**Vercel** (Recommended):
+- One-click deploy: Import repo → Set build command `npm run build` → Output: `dist`
+- Get your custom `*.vercel.app` URL instantly
+- Includes automatic preview deployments for PRs
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for step-by-step instructions.
