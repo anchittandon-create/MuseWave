@@ -126,10 +126,12 @@ If you need to set environment variables (e.g., `GEMINI_API_KEY`):
 
 1. Go to project **Settings** → **Environment Variables**
 2. Add your variables:
-   - Name: `VITE_GEMINI_API_KEY` (must start with `VITE_` for Vite)
+   - Name: `GEMINI_API_KEY` (this project uses `GEMINI_API_KEY`, not `VITE_` prefix)
    - Value: Your API key
    - Environment: Production, Preview, Development (select as needed)
 3. Redeploy for changes to take effect
+
+**Note**: This project's `vite.config.ts` is configured to read `GEMINI_API_KEY` directly and expose it as `process.env.API_KEY` and `process.env.GEMINI_API_KEY` in the client bundle.
 
 ---
 
@@ -159,7 +161,9 @@ If you need to set environment variables (e.g., `GEMINI_API_KEY`):
 
 **Problem: Blank page after deployment**
 - Solution: Check browser console for errors
-- Verify the base path in `vite.config.ts` matches your repo name if needed
+- For GitHub Pages: The workflow automatically sets `VITE_BASE_PATH=/MuseWave/` during build
+- For custom domains or root deployment: Base path is `/` by default
+- Verify assets are loading correctly (check Network tab in DevTools)
 
 **Problem: Workflow fails**
 - Solution: Check the Actions tab for error logs
@@ -174,7 +178,8 @@ If you need to set environment variables (e.g., `GEMINI_API_KEY`):
 - Verify all dependencies are listed in `package.json`
 
 **Problem: Environment variables not working**
-- Solution: Ensure variables are prefixed with `VITE_` for client-side access
+- Solution: Ensure you use `GEMINI_API_KEY` (without `VITE_` prefix for this project)
+- The vite.config.ts is already configured to read this variable
 - Redeploy after adding environment variables
 
 **Problem: Old version showing**
