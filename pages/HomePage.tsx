@@ -92,7 +92,10 @@ const adaptPlan = (backendPlan: any, req: FormState, seed: number): MusicPlan =>
       durationBars,
       chordProgression,
       drumPattern: createDrumPattern(durationBars),
-      synthLine: { pattern: 'pads', timbre: 'warm' },
+      synthLine: { 
+        pattern: 'pads' as const, 
+        timbre: 'warm' as const 
+      },
       leadMelody: [] as LeadMelodyNote[],
       effects: {
         reverb: 30,
@@ -140,7 +143,7 @@ const HomePage = () => {
     lyrics: '',
     languages: [],
     generateVideo: false, // COST OPTIMIZATION: Default to audio-only (lazy generation)
-    videoStyles: ['lyrical'],
+    videoStyles: ['lyric'] as VideoStyle[],
   });
   const [job, setJob] = useState<Job | null>(null);
   const [displayProgress, setDisplayProgress] = useState(0);
@@ -148,7 +151,7 @@ const HomePage = () => {
   const [stageTimeLeft, setStageTimeLeft] = useState('00:00');
   const [enhancingField, setEnhancingField] = useState<EnhancingField | null>(null);
 
-  const eventSourceRef = useRef<EventSource | null>(null);
+  const eventSourceRef = useRef<{ close(): void } | null>(null);
   const progressAnimatorRef = useRef<number | null>(null);
   const lastProgressRef = useRef(0);
   const { toast } = useToast();
@@ -395,7 +398,12 @@ const HomePage = () => {
         (event: OrchestratorEvent) => {
           console.info('[MuseWave] Orchestrator event', response.jobId, event);
           if (event.error) {
-            setJob(prev => prev ? { ...prev, status: 'error', message: event.error, rca: event.error } : prev);
+            setJob(prev => prev ? { 
+              ...prev, 
+              status: 'error' as JobStatus, 
+              message: event.error || 'Generation failed', 
+              rca: event.error || 'Unknown error' 
+            } : prev);
             toast(event.error, 'error');
             return;
           }
@@ -412,7 +420,12 @@ const HomePage = () => {
               .then(result => {
                 console.info('[MuseWave] Job result received', result);
                 if (result.error) {
-                  setJob(prev => prev ? { ...prev, status: 'error', message: result.error, rca: result.error } : prev);
+                  setJob(prev => prev ? { 
+                    ...prev, 
+                    status: 'error' as JobStatus, 
+                    message: result.error || 'Generation failed', 
+                    rca: result.error || 'Unknown error' 
+                  } : prev);
                   toast(result.error, 'error');
                   return;
                 }
@@ -529,7 +542,7 @@ const HomePage = () => {
       lyrics: '', 
       languages: [], 
       generateVideo: false, // COST OPTIMIZATION: Always default to audio-only
-      videoStyles: ['lyrical'] 
+      videoStyles: ['lyric'] as VideoStyle[] 
     });
     setJob(null);
     setDisplayProgress(0);
@@ -628,7 +641,11 @@ const HomePage = () => {
               {job.status === 'complete' && job.finalPlan && (
                 <div className="space-y-6 animate-in fade-in duration-500">
                   <h2 className="text-2xl font-bold tracking-tight text-center">Your masterpiece is ready!</h2>
-                  <MusicPlayer job={job} audioUrl={job.audioUrl} videoUrls={job.videoUrls} />
+                  <MusicPlayer 
+                    job={job} 
+                    audioUrl={job.audioUrl || null} 
+                    videoUrls={job.videoUrls || null} 
+                  />
                   {job.finalPlan.plan.lyrics && (
                     <AIAudioTranscript lyrics={job.finalPlan.plan.lyrics} />
                   )}
