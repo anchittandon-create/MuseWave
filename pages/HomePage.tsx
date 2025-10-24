@@ -139,7 +139,7 @@ const HomePage = () => {
     artists: [],
     lyrics: '',
     languages: [],
-    generateVideo: false,
+    generateVideo: false, // COST OPTIMIZATION: Default to audio-only (lazy generation)
     videoStyles: ['lyrical'],
   });
   const [job, setJob] = useState<Job | null>(null);
@@ -521,7 +521,16 @@ const HomePage = () => {
       cancelAnimationFrame(progressAnimatorRef.current);
       progressAnimatorRef.current = null;
     }
-    setFormState({ prompt: '', genres: [], duration: 90, artists: [], lyrics: '', languages: [], generateVideo: false, videoStyles: ['lyrical'] });
+    setFormState({ 
+      prompt: '', 
+      genres: [], 
+      duration: 90, 
+      artists: [], 
+      lyrics: '', 
+      languages: [], 
+      generateVideo: false, // COST OPTIMIZATION: Always default to audio-only
+      videoStyles: ['lyrical'] 
+    });
     setJob(null);
     setDisplayProgress(0);
     setTotalTimeLeft('00:00');
