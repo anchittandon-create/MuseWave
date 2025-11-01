@@ -100,7 +100,12 @@ function DashboardPage() {
                                                         <RefreshCwIcon className="h-4 w-4 mr-2" />
                                                         Remix
                                                     </Button>
-                                                     <a href={job.audioUrl || '#'} download={`${job.finalPlan?.plan?.title || 'track'}.wav`}>
+                                                     <a 
+                                                        href={job.audioUrl || '#'} 
+                                                        download={`${job.finalPlan?.plan?.title || 'track'}.wav`}
+                                                        title={`Download ${job.finalPlan?.plan?.title || 'track'}`}
+                                                        aria-label={`Download ${job.finalPlan?.plan?.title || 'track'}`}
+                                                    >
                                                         <Button variant="outline" size="icon" disabled={!job.audioUrl}>
                                                             <DownloadIcon className="h-4 w-4" />
                                                         </Button>
