@@ -1,25 +1,56 @@
 import { spawn } from 'child_process';
 import { promises as fs } from 'fs';
+import { writeFile } from 'fs/promises';
 import path from 'path';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import { logger } from '../logger.js';
+import { vocalService } from './vocalService.js';
+const execAsync = promisify(exec);
 export class VideoService {
-    async generateVideo(audioPath, plan, outputPath) {
+    async generateVideo(audioPath, plan, outputPath, videoStyles, lyrics) {
         const tempDir = path.dirname(outputPath);
         await fs.mkdir(tempDir, { recursive: true });
         // Get duration from plan or default
         const duration = plan?.structure?.reduce((sum, s) => sum + s.duration, 0) || 30;
-        // Generate simple visuals - color gradients that change with the music
-        const visualPath = path.join(tempDir, 'visuals.mp4');
-        await this.generateVisuals(plan, duration, visualPath);
-        // Combine audio and video
-        await this.combineAudioVideo(audioPath, visualPath, outputPath);
+        const style = videoStyles?.[0] || 'Abstract Visualizer';
+        if (style === 'Lyric Video' && lyrics) {
+            await this.generateLyricVideo(audioPath, lyrics, duration, plan.bpm, outputPath);
+        }
+        else if (style === 'Official Music Video') {
+            await this.generateOfficialVideo(audioPath, duration, outputPath);
+        }
+        else {
+            await this.generateAbstractVisualizer(audioPath, duration, outputPath);
+        }
+        logger.info({ outputPath, style }, 'Video generation complete');
+    }
+    async generateLyricVideo(audioPath, lyrics, duration, bpm, outputPath) {
+        const tempDir = path.dirname(outputPath);
+        const srtPath = path.join(tempDir, 'captions.srt');
+        // Generate SRT captions
+        const srtContent = await vocalService.generateSRT(lyrics, duration, bpm);
+        await writeFile(srtPath, srtContent);
+        // Generate video with subtitles
+        const cmd = `ffmpeg -i "${audioPath}" -f lavfi -i color=c=black:s=1280x720:d=${duration} -vf "subtitles=${srtPath}:force_style='FontName=Arial,FontSize=24,PrimaryColour=&HFFFFFF,OutlineColour=&H000000,Alignment=2',format=yuv420p,scale=1280:720" -r 30 -shortest -pix_fmt yuv420p -y "${outputPath}"`;
+        await execAsync(cmd);
         // Clean up
         try {
-            await fs.unlink(visualPath);
+            await fs.unlink(srtPath);
         }
         catch (error) {
-            logger.warn({ error }, 'Failed to clean up visuals');
+            logger.warn({ error }, 'Failed to clean up SRT file');
         }
+    }
+    async generateOfficialVideo(audioPath, duration, outputPath) {
+        // Generate spectrum visualizer with rainbow colors
+        const cmd = `ffmpeg -i "${audioPath}" -filter_complex "[0:a]showspectrum=s=1280x720:mode=combined:color=rainbow,tmix=frames=3,eq=contrast=1.12,format=yuv420p[v]" -map "[v]" -map 0:a -r 30 -shortest -pix_fmt yuv420p -y "${outputPath}"`;
+        await execAsync(cmd);
+    }
+    async generateAbstractVisualizer(audioPath, duration, outputPath) {
+        // Generate waveform visualizer
+        const cmd = `ffmpeg -i "${audioPath}" -filter_complex "[0:a]showwaves=s=1280x720:mode=cline,eq=contrast=1.2:brightness=0.02,format=yuv420p[v]" -map "[v]" -map 0:a -r 30 -shortest -pix_fmt yuv420p -y "${outputPath}"`;
+        await execAsync(cmd);
     }
     generateVisuals(plan, duration, outputPath) {
         return new Promise((resolve, reject) => {

@@ -15,19 +15,19 @@ export declare const planRequestSchema: z.ZodObject<{
         lengthBars: number;
     }>, "many">>;
 }, "strip", z.ZodTypeAny, {
-    prompt?: string | undefined;
-    genre?: "pop" | "rock" | "edm" | "lofi" | undefined;
-    bpm?: number | undefined;
     durationSec?: number | undefined;
+    prompt?: string | undefined;
+    genre?: "pop" | "lofi" | "edm" | "rock" | undefined;
+    bpm?: number | undefined;
     structure?: {
         section: "intro" | "verse" | "chorus" | "bridge" | "outro";
         lengthBars: number;
     }[] | undefined;
 }, {
-    prompt?: string | undefined;
-    genre?: "pop" | "rock" | "edm" | "lofi" | undefined;
-    bpm?: number | undefined;
     durationSec?: number | undefined;
+    prompt?: string | undefined;
+    genre?: "pop" | "lofi" | "edm" | "rock" | undefined;
+    bpm?: number | undefined;
     structure?: {
         section: "intro" | "verse" | "chorus" | "bridge" | "outro";
         lengthBars: number;
@@ -108,8 +108,8 @@ export declare const generateVideoSchema: z.ZodObject<{
     coverImageAssetId: z.ZodOptional<z.ZodString>;
     captionsAssetId: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
-    audioAssetId: string;
     style: "waveform" | "particles";
+    audioAssetId: string;
     resolution: "1080p" | "720p";
     fps: number;
     coverImageAssetId?: string | undefined;

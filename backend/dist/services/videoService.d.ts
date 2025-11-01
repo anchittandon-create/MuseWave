@@ -1,5 +1,8 @@
 export declare class VideoService {
-    generateVideo(audioPath: string, plan: any, outputPath: string): Promise<void>;
+    generateVideo(audioPath: string, plan: any, outputPath: string, videoStyles?: string[], lyrics?: string): Promise<void>;
+    private generateLyricVideo;
+    private generateOfficialVideo;
+    private generateAbstractVisualizer;
     private generateVisuals;
     private combineAudioVideo;
 }

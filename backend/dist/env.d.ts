@@ -1,8 +1,8 @@
 export declare const env: {
-    ASSETS_DIR: string;
     PORT: number;
     AUTH_SECRET: string;
     RATE_LIMIT_PER_MIN: number;
+    ASSETS_DIR: string;
     USE_S3: boolean;
     S3_BUCKET?: string | undefined;
     S3_REGION?: string | undefined;

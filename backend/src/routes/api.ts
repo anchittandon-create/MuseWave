@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { planRequestSchema, generateAudioSchema, generateVocalsSchema, generateMixSchema, generateVideoSchema } from './validators';
-import { Queue } from '../queue';
+import { Queue } from '../queue/queue.js';
 import { AuthedRequest } from '../auth';
 import { JOB_TYPE } from '../types';
 

@@ -28,7 +28,7 @@ export class PlanService {
   async generatePlan(prompt: string, duration: number, genres?: string[], artistInspiration?: string[]): Promise<MusicPlan> {
     if (!this.genAI) {
       // Mock plan for development
-      return this.generateMockPlan(prompt, duration);
+      return this.generateMockPlan(prompt, duration, genres, artistInspiration);
     }
 
     const model = this.genAI.getGenerativeModel({ model: 'gemini-pro' });

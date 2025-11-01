@@ -1,6 +1,6 @@
 import { randomInt } from 'crypto';
 import { logger } from '../logger';
-import { Queue } from '../queue';
+import { Queue } from '../queue/queue.js';
 import { planRequestSchema } from '../routes/validators';
 import { saveAssetFromBuffer } from '../services/assets';
 import { JOB_TYPE } from '../types';

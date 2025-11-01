@@ -14,7 +14,7 @@ export interface MusicPlan {
 export declare class PlanService {
     private genAI?;
     constructor();
-    generatePlan(prompt: string, duration: number): Promise<MusicPlan>;
+    generatePlan(prompt: string, duration: number, genres?: string[], artistInspiration?: string[]): Promise<MusicPlan>;
     private generateMockPlan;
 }
 export declare const planService: PlanService;

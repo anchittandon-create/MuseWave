@@ -197,11 +197,36 @@ export class Queue extends EventEmitter {
       // Process the music generation job
       const result = await this.processMusicJob(job);
 
+      // Fetch all assets for this job
+      const assets = await this.prisma.asset.findMany({
+        where: { jobId: job.id },
+      });
+
+      // Build asset URLs
+      const assetUrls: any = {};
+      for (const asset of assets) {
+        if (asset.type === 'audio') {
+          assetUrls.mixUrl = asset.url;
+          assetUrls.previewUrl = asset.url;
+        } else if (asset.type === 'video') {
+          assetUrls.videoUrl = asset.url;
+        }
+      }
+
+      const resultData = {
+        bpm: result.plan.bpm,
+        key: result.plan.key,
+        scale: result.plan.key.toLowerCase().includes('minor') ? 'minor' : 'major',
+        assets: assetUrls,
+        debug: { mode: 'cli', duration: job.duration },
+      };
+
       await this.prisma.job.update({
         where: { id: job.id },
         data: {
           status: 'completed',
           plan: JSON.stringify(result.plan),
+          result: JSON.stringify(resultData),
         },
       });
 
@@ -248,18 +273,18 @@ export class Queue extends EventEmitter {
       const audioPath = `/tmp/audio_${job.id}.wav`;
       await audioService.generateAudio(plan, job.duration, audioPath, job.lyrics, job.vocalLanguages);
 
-      // Create audio asset
-      const audioAssetId = await jobSvc.createAsset(job.id, 'audio', `file://${audioPath}`, 0);
+      // Create audio asset (this will store the file properly)
+      const audioAssetId = await jobSvc.createAsset(job.id, 'audio', audioPath);
 
       let finalAssetId = audioAssetId;
 
       if (job.includeVideo) {
         // Generate video
         const videoPath = `/tmp/video_${job.id}.mp4`;
-        await videoService.generateVideo(audioPath, plan, videoPath, job.videoStyles);
+        await videoService.generateVideo(audioPath, plan, videoPath, job.videoStyles, job.lyrics);
 
-        // Create video asset
-        finalAssetId = await jobSvc.createAsset(job.id, 'video', `file://${videoPath}`, 0);
+        // Create video asset (this will store the file properly)
+        finalAssetId = await jobSvc.createAsset(job.id, 'video', videoPath);
       }
 
       return { plan, assetId: finalAssetId };

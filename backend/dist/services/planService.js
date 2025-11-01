@@ -8,16 +8,18 @@ export class PlanService {
             this.genAI = new GoogleGenerativeAI(config.GEMINI_API_KEY);
         }
     }
-    async generatePlan(prompt, duration) {
+    async generatePlan(prompt, duration, genres, artistInspiration) {
         if (!this.genAI) {
             // Mock plan for development
-            return this.generateMockPlan(prompt, duration);
+            return this.generateMockPlan(prompt, duration, genres, artistInspiration);
         }
         const model = this.genAI.getGenerativeModel({ model: 'gemini-pro' });
         const promptText = `
 Create a detailed music production plan for the following request:
 Prompt: "${prompt}"
 Duration: ${duration} seconds
+Genres: ${genres?.join(', ') || 'any'}
+Artist Inspiration: ${artistInspiration?.join(', ') || 'none'}
 
 Return a JSON object with this structure:
 {
@@ -65,15 +67,26 @@ Be creative and detailed.
         }
         catch (error) {
             logger.error({ error }, 'Failed to generate plan with Gemini');
-            return this.generateMockPlan(prompt, duration);
+            return this.generateMockPlan(prompt, duration, genres, artistInspiration);
         }
     }
-    generateMockPlan(prompt, duration) {
+    generateMockPlan(prompt, duration, genres, artistInspiration) {
+        const genre = genres?.[0] || 'Electronic';
+        const bpmMap = {
+            lofi: 82,
+            techno: 128,
+            garage: 134,
+            dnb: 174,
+            ambient: 85,
+        };
+        const bpm = bpmMap[genre.toLowerCase()] || 120;
+        const keys = ["A minor", "C minor", "D minor", "E minor", "G minor"];
+        const key = keys[Math.floor(Math.random() * keys.length)];
         return {
             title: `Generated Track: ${prompt.substring(0, 20)}...`,
-            genre: 'Electronic',
-            bpm: 128,
-            key: 'C Minor',
+            genre,
+            bpm,
+            key,
             structure: [
                 { section: 'Intro', duration: Math.floor(duration * 0.2), description: 'Build tension' },
                 { section: 'Verse', duration: Math.floor(duration * 0.3), description: 'Main melody' },

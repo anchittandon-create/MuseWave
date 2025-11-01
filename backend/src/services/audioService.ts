@@ -4,42 +4,68 @@ import path from 'path';
 import { config } from '../config.js';
 import { logger } from '../logger.js';
 import { MusicPlan } from './planService.js';
+import { audioSynthService } from './audioSynthService.js';
+import { vocalService } from './vocalService.js';
 
 export class AudioService {
-  async generateAudio(plan: MusicPlan, duration: number, outputPath: string): Promise<void> {
-    // Generate basic audio using ffmpeg
-    // This is a simplified implementation - in reality, you'd use more sophisticated synthesis
-
+  async generateAudio(plan: MusicPlan, duration: number, outputPath: string, lyrics?: string, vocalLanguages?: string[]): Promise<void> {
     const tempDir = path.dirname(outputPath);
     await fs.mkdir(tempDir, { recursive: true });
 
-    // Generate sine wave for each section
-    const audioParts: string[] = [];
+    // Generate instrumental using real synthesis
+    const instrumentalPath = path.join(tempDir, `instrumental_${Date.now()}.wav`);
+    await audioSynthService.synthesize(plan, duration, instrumentalPath);
 
-    for (let i = 0; i < plan.structure.length; i++) {
-      const section = plan.structure[i];
-      const freq = this.getFrequencyForSection(section.section, plan.bpm);
-      const partPath = path.join(tempDir, `part_${i}.wav`);
+    // If lyrics exist, generate vocals and mix them
+    if (lyrics && lyrics.trim().length > 0) {
+      const vocalsPath = path.join(tempDir, `vocals_${Date.now()}.wav`);
+      await vocalService.generateVocals(lyrics, duration, plan.bpm, vocalsPath, vocalLanguages);
 
-      await this.generateTone(freq, section.duration, partPath);
-      audioParts.push(partPath);
-    }
+      // Mix instrumental and vocals
+      await this.mixAudioFiles([instrumentalPath, vocalsPath], [0.8, 0.9], outputPath);
 
-    // Concatenate parts
-    if (audioParts.length === 1) {
-      await fs.copyFile(audioParts[0], outputPath);
-    } else {
-      await this.concatenateAudio(audioParts, outputPath);
-    }
-
-    // Clean up temp files
-    for (const part of audioParts) {
+      // Clean up temp files
       try {
-        await fs.unlink(part);
+        await fs.unlink(instrumentalPath);
+        await fs.unlink(vocalsPath);
       } catch (error) {
-        logger.warn({ error }, `Failed to clean up ${part}`);
+        logger.warn({ error }, 'Failed to clean up temp audio files');
+      }
+    } else {
+      // No vocals, just copy instrumental
+      await fs.copyFile(instrumentalPath, outputPath);
+      try {
+        await fs.unlink(instrumentalPath);
+      } catch (error) {
+        logger.warn({ error }, 'Failed to clean up instrumental');
       }
     }
+
+    logger.info({ outputPath }, 'Audio generation complete');
+  }
+
+  private async mixAudioFiles(inputs: string[], volumes: number[], outputPath: string): Promise<void> {
+    const inputArgs = inputs.map(p => `-i "${p}"`).join(' ');
+    const filterComplex = inputs.map((_, i) => `[${i}:a]volume=${volumes[i]}[a${i}]`).join(';');
+    const mixInputs = inputs.map((_, i) => `[a${i}]`).join('');
+    
+    return new Promise((resolve, reject) => {
+      const ffmpeg = spawn('ffmpeg', [
+        ...inputs.flatMap(p => ['-i', p]),
+        '-filter_complex',
+        `${filterComplex};${mixInputs}amix=inputs=${inputs.length}:normalize=0[out]`,
+        '-map', '[out]',
+        '-y',
+        outputPath
+      ]);
+
+      ffmpeg.on('close', (code) => {
+        if (code === 0) resolve();
+        else reject(new Error(`ffmpeg mix exited with code ${code}`));
+      });
+
+      ffmpeg.on('error', reject);
+    });
   }
 
   private getFrequencyForSection(section: string, bpm: number): number {

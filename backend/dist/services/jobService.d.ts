@@ -3,27 +3,32 @@ export declare class JobService {
     private prisma;
     constructor(prisma: PrismaClient);
     updateJobStatus(jobId: string, status: string, error?: string): Promise<void>;
-    createAsset(jobId: string, type: 'audio' | 'video' | 'plan', url: string, size?: number): Promise<string>;
+    createAsset(jobId: string, type: 'audio' | 'video' | 'plan', tempPath: string, size?: number): Promise<string>;
     getJobWithAssets(jobId: string): Promise<({
         assets: {
             path: string | null;
             type: string;
-            url: string;
             id: string;
             createdAt: Date;
+            url: string;
             jobId: string;
             meta: string | null;
             size: number | null;
         }[];
     } & {
-        error: string | null;
         status: string;
-        maxAttempts: number;
+        error: string | null;
+        result: string | null;
         id: string;
         userId: string | null;
         createdAt: Date;
-        result: string | null;
+        maxAttempts: number;
         apiKeyId: string | null;
+        genres: string[];
+        artistInspiration: string[];
+        lyrics: string | null;
+        vocalLanguages: string[];
+        videoStyles: string[];
         prompt: string;
         duration: number;
         includeVideo: boolean;

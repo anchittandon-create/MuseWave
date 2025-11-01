@@ -40,13 +40,13 @@ export declare const jobResponseSchema: z.ZodObject<{
         size: z.ZodNullable<z.ZodNumber>;
     }, "strip", z.ZodTypeAny, {
         type: "plan" | "audio" | "video";
-        url: string;
         id: string;
+        url: string;
         size: number | null;
     }, {
         type: "plan" | "audio" | "video";
-        url: string;
         id: string;
+        url: string;
         size: number | null;
     }>, "many">;
     createdAt: z.ZodDate;
@@ -61,8 +61,8 @@ export declare const jobResponseSchema: z.ZodObject<{
     updatedAt: Date;
     assets: {
         type: "plan" | "audio" | "video";
-        url: string;
         id: string;
+        url: string;
         size: number | null;
     }[];
     plan?: any;
@@ -76,8 +76,8 @@ export declare const jobResponseSchema: z.ZodObject<{
     updatedAt: Date;
     assets: {
         type: "plan" | "audio" | "video";
-        url: string;
         id: string;
+        url: string;
         size: number | null;
     }[];
     plan?: any;
@@ -90,15 +90,15 @@ export declare const assetResponseSchema: z.ZodObject<{
     createdAt: z.ZodDate;
 }, "strip", z.ZodTypeAny, {
     type: "plan" | "audio" | "video";
-    url: string;
     id: string;
     createdAt: Date;
+    url: string;
     size: number | null;
 }, {
     type: "plan" | "audio" | "video";
-    url: string;
     id: string;
     createdAt: Date;
+    url: string;
     size: number | null;
 }>;
 export declare const healthResponseSchema: z.ZodObject<{

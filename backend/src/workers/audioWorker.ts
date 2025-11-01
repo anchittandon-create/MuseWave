@@ -1,4 +1,4 @@
-import { Queue } from '../queue';
+import { Queue } from '../queue/queue.js';
 import { generateAudioSchema } from '../routes/validators';
 import { MockAudioProvider } from '../services/audioProvider';
 import { JOB_TYPE } from '../types';

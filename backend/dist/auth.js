@@ -6,7 +6,7 @@ export function apiAuth(prisma) {
             return res.status(403).json({ error: { code: 'UNAUTHORIZED', message: 'Missing bearer token' } });
         }
         const token = header.slice('Bearer '.length).trim();
-        const record = await prisma.apiKey.findFirst({ where: { key: token, isActive: true } });
+        const record = await prisma.apiKey.findFirst({ where: { key: token } });
         if (!record) {
             return res.status(403).json({ error: { code: 'UNAUTHORIZED', message: 'Invalid API key' } });
         }

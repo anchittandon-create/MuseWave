@@ -18,10 +18,14 @@ export class Queue extends EventEmitter {
         const job = await this.prisma.job.create({
             data: {
                 status: 'pending',
-                prompt: params.prompt || '',
-                duration: params.duration || 30,
-                includeVideo: params.includeVideo || false,
-                plan: params.plan || null,
+                prompt: params.musicPrompt,
+                duration: params.durationSec,
+                includeVideo: params.generateVideo,
+                genres: params.genres,
+                artistInspiration: params.artistInspiration || [],
+                lyrics: params.lyrics,
+                vocalLanguages: params.vocalLanguages || [],
+                videoStyles: params.videoStyles || [],
                 userId: options.apiKeyId,
             },
         });
@@ -153,11 +157,34 @@ export class Queue extends EventEmitter {
             });
             // Process the music generation job
             const result = await this.processMusicJob(job);
+            // Fetch all assets for this job
+            const assets = await this.prisma.asset.findMany({
+                where: { jobId: job.id },
+            });
+            // Build asset URLs
+            const assetUrls = {};
+            for (const asset of assets) {
+                if (asset.type === 'audio') {
+                    assetUrls.mixUrl = asset.url;
+                    assetUrls.previewUrl = asset.url;
+                }
+                else if (asset.type === 'video') {
+                    assetUrls.videoUrl = asset.url;
+                }
+            }
+            const resultData = {
+                bpm: result.plan.bpm,
+                key: result.plan.key,
+                scale: result.plan.key.toLowerCase().includes('minor') ? 'minor' : 'major',
+                assets: assetUrls,
+                debug: { mode: 'cli', duration: job.duration },
+            };
             await this.prisma.job.update({
                 where: { id: job.id },
                 data: {
                     status: 'completed',
                     plan: JSON.stringify(result.plan),
+                    result: JSON.stringify(resultData),
                 },
             });
             jobCount.inc({ status: 'completed' });
@@ -192,19 +219,19 @@ export class Queue extends EventEmitter {
             const jobService = jobServiceModule.jobService;
             const jobSvc = jobService(this.prisma);
             // Generate plan
-            const plan = await planService.generatePlan(job.prompt, job.duration);
+            const plan = await planService.generatePlan(job.prompt, job.duration, job.genres, job.artistInspiration);
             // Generate audio
             const audioPath = `/tmp/audio_${job.id}.wav`;
-            await audioService.generateAudio(plan, job.duration, audioPath);
-            // Create audio asset
-            const audioAssetId = await jobSvc.createAsset(job.id, 'audio', `file://${audioPath}`, 0);
+            await audioService.generateAudio(plan, job.duration, audioPath, job.lyrics, job.vocalLanguages);
+            // Create audio asset (this will store the file properly)
+            const audioAssetId = await jobSvc.createAsset(job.id, 'audio', audioPath);
             let finalAssetId = audioAssetId;
             if (job.includeVideo) {
                 // Generate video
                 const videoPath = `/tmp/video_${job.id}.mp4`;
-                await videoService.generateVideo(audioPath, plan, videoPath);
-                // Create video asset
-                finalAssetId = await jobSvc.createAsset(job.id, 'video', `file://${videoPath}`, 0);
+                await videoService.generateVideo(audioPath, plan, videoPath, job.videoStyles, job.lyrics);
+                // Create video asset (this will store the file properly)
+                finalAssetId = await jobSvc.createAsset(job.id, 'video', videoPath);
             }
             return { plan, assetId: finalAssetId };
         }
