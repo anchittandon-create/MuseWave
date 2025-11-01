@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "ROLLUP_SKIP_NATIVE=1 vite build",
+    "build": "vite build",
+    "build:vercel": "vite build",
     "preview": "vite preview",
     "smoke": "npm run build && node scripts/smoke-playwright.mjs",
     "prepare": "husky"

@@ -22,12 +22,11 @@ export default defineConfig(({ mode }) => {
       },
       build: {
         rollupOptions: {
-          external: [
-            '@google/generative-ai', // Never bundle Gemini SDK in browser
-            '@napi-rs/canvas',       // Node-only canvas library
-            'canvas'                 // Legacy canvas library
-          ]
-        }
+          output: {
+            manualChunks: undefined
+          }
+        },
+        sourcemap: false
       }
     };
 });
