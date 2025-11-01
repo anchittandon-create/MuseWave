@@ -74,16 +74,20 @@ const createDrumPattern = (bars: number): DrumPattern => {
 
 const adaptPlan = (backendPlan: any, req: FormState, seed: number): MusicPlan => {
   const durationSec = backendPlan?.duration_sec ?? req.duration;
-  const sections: string[] = backendPlan?.sections ?? ['Intro', 'Verse', 'Chorus', 'Bridge', 'Outro'];
+  const sections: string[] = Array.isArray(backendPlan?.sections) ? backendPlan.sections : ['Intro', 'Verse', 'Chorus', 'Bridge', 'Outro'];
   const barsPerSection: number = backendPlan?.bars_per_section ?? 8;
 
   const adaptedSections = sections.map((name) => {
     const sectionType = mapSectionType(name);
     const durationBars = barsPerSection;
-    const chordProgression: string[] = backendPlan?.chord_progressions?.[name] || [];
-    const lyricsForSection = (backendPlan?.lyrics_lines || [])
-      .filter((line: any) => line.section === name)
-      ?.map((line: any) => line.text)
+    const chordProgression: string[] = Array.isArray(backendPlan?.chord_progressions?.[name]) 
+      ? backendPlan.chord_progressions[name] 
+      : [];
+    
+    const lyricsLines = Array.isArray(backendPlan?.lyrics_lines) ? backendPlan.lyrics_lines : [];
+    const lyricsForSection = lyricsLines
+      .filter((line: any) => line && line.section === name)
+      .map((line: any) => line.text || '')
       .join(' ');
 
     return {
@@ -106,7 +110,8 @@ const adaptPlan = (backendPlan: any, req: FormState, seed: number): MusicPlan =>
     };
   });
 
-  const lyricsCombined = req.lyrics || (backendPlan?.lyrics_lines || []).map((l: any) => l.text).join('\n') || '';
+  const lyricsLines = Array.isArray(backendPlan?.lyrics_lines) ? backendPlan.lyrics_lines : [];
+  const lyricsCombined = req.lyrics || lyricsLines.map((l: any) => l?.text || '').join('\n') || '';
 
   const cuePoints = {
     introEnd: Math.round(durationSec * 0.15),
@@ -115,12 +120,14 @@ const adaptPlan = (backendPlan: any, req: FormState, seed: number): MusicPlan =>
   };
 
   return {
-  title: backendPlan?.title || (req as any).prompt?.slice(0, 48) || 'MuseForge Track',
-    genre: backendPlan?.genre || req.genres[0] || 'Electronic',
+    title: backendPlan?.title || (req as any).prompt?.slice(0, 48) || 'MuseForge Track',
+    genre: backendPlan?.genre || (Array.isArray(req.genres) ? req.genres[0] : undefined) || 'Electronic',
     bpm: backendPlan?.bpm || 120,
     key: backendPlan?.key || 'C',
     overallStructure: sections.join(' → '),
-    vocalStyle: (backendPlan?.artist_style_notes || []).join(', ') || 'Adaptive vocal style',
+    vocalStyle: Array.isArray(backendPlan?.artist_style_notes) 
+      ? backendPlan.artist_style_notes.join(', ') 
+      : 'Adaptive vocal style',
     lyrics: lyricsCombined,
     randomSeed: seed,
     sections: adaptedSections,
@@ -179,14 +186,16 @@ const HomePage = () => {
 
   // Auto-suggest Indian artists if Hindi lyrics/language detected
   useEffect(() => {
-    const containsHindiLanguage = formState.languages.some(lang => lang.toLowerCase().includes('hindi'));
+    const languages = Array.isArray(formState.languages) ? formState.languages : [];
+    const containsHindiLanguage = languages.some(lang => lang.toLowerCase().includes('hindi'));
     const containsHindiScript = /[\u0900-\u097F]/.test(formState.lyrics || '');
     if (containsHindiLanguage || containsHindiScript) {
       const suggested = ['A.R. Rahman', 'Shreya Ghoshal', 'Arijit Singh'];
       setFormState(prev => {
-        const missing = suggested.filter(name => !prev.artists.includes(name));
+        const currentArtists = Array.isArray(prev.artists) ? prev.artists : [];
+        const missing = suggested.filter(name => !currentArtists.includes(name));
         if (!missing.length) return prev;
-        return { ...prev, artists: [...prev.artists, ...missing] };
+        return { ...prev, artists: [...currentArtists, ...missing] };
       });
     }
   }, [formState.languages, formState.lyrics]);
@@ -277,13 +286,15 @@ const HomePage = () => {
             case 'genres': {
               const next = Array.isArray(result.genres) ? result.genres : [];
               if (!next.length) return prev;
-              const merged = Array.from(new Set([...prev.genres, ...next]));
+              const currentGenres = Array.isArray(prev.genres) ? prev.genres : [];
+              const merged = Array.from(new Set([...currentGenres, ...next]));
               return { ...prev, genres: merged };
             }
             case 'artists': {
               const next = Array.isArray(result.artists) ? result.artists : [];
               if (!next.length) return prev;
-              const merged = Array.from(new Set([...prev.artists, ...next]));
+              const currentArtists = Array.isArray(prev.artists) ? prev.artists : [];
+              const merged = Array.from(new Set([...currentArtists, ...next]));
               return { ...prev, artists: merged };
             }
             case 'lyrics':
@@ -291,7 +302,8 @@ const HomePage = () => {
             case 'languages': {
               const next = Array.isArray(result.languages) ? result.languages : [];
               if (!next.length) return prev;
-              const merged = Array.from(new Set([...prev.languages, ...next]));
+              const currentLanguages = Array.isArray(prev.languages) ? prev.languages : [];
+              const merged = Array.from(new Set([...currentLanguages, ...next]));
               return { ...prev, languages: merged };
             }
             default:
@@ -319,12 +331,12 @@ const HomePage = () => {
   };
 
   const handleGenerate = useCallback(async () => {
-    if (!formState.prompt && formState.genres.length === 0) {
+    if (!formState.prompt && (!Array.isArray(formState.genres) || formState.genres.length === 0)) {
       toast('Please provide a prompt or at least one genre to start.', 'error');
       return;
     }
 
-    if (formState.generateVideo && formState.videoStyles.length === 0) {
+    if (formState.generateVideo && (!Array.isArray(formState.videoStyles) || formState.videoStyles.length === 0)) {
       toast('Please select at least one video style when video generation is enabled.', 'error');
       return;
     }
@@ -368,13 +380,13 @@ const HomePage = () => {
     try {
       const payload = {
         musicPrompt: formState.prompt,
-        genres: formState.genres,
+        genres: Array.isArray(formState.genres) ? formState.genres : [],
         duration: formState.duration,
-        artistInspiration: formState.artists,
+        artistInspiration: Array.isArray(formState.artists) ? formState.artists : [],
         lyrics: formState.lyrics || undefined,
-        videoStyles: formState.videoStyles,
+        videoStyles: Array.isArray(formState.videoStyles) ? formState.videoStyles : [],
         generateVideo: formState.generateVideo,
-        languages: formState.languages,
+        languages: Array.isArray(formState.languages) ? formState.languages : [],
         seed,
       };
 
