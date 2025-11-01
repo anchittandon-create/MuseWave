@@ -44,7 +44,10 @@ const STATUS_ETAS: Partial<Record<JobStatus, number>> = {
   'finalizing': 4,
 };
 
-const formatSeconds = (seconds: number) => {
+const formatSeconds = (seconds?: number | null) => {
+  if (seconds === null || seconds === undefined || !Number.isFinite(seconds)) {
+    return '--:--';
+  }
   const clamped = Math.max(0, Math.round(seconds));
   const m = Math.floor(clamped / 60);
   const s = clamped % 60;
@@ -154,16 +157,74 @@ const HomePage = () => {
   });
   const [job, setJob] = useState<Job | null>(null);
   const [displayProgress, setDisplayProgress] = useState(0);
-  const [totalTimeLeft, setTotalTimeLeft] = useState('00:00');
-  const [stageTimeLeft, setStageTimeLeft] = useState('00:00');
+  const [totalTimeLeft, setTotalTimeLeft] = useState(formatSeconds(undefined));
+  const [stageTimeLeft, setStageTimeLeft] = useState(formatSeconds(undefined));
   const [enhancingField, setEnhancingField] = useState<EnhancingField | null>(null);
 
   const eventSourceRef = useRef<{ close(): void } | null>(null);
   const progressAnimatorRef = useRef<number | null>(null);
   const lastProgressRef = useRef(0);
+  const jobStartRef = useRef<number | null>(null);
+  const stageInfoRef = useRef<{ status: JobStatus; startedAt: number; baseline: number } | null>(null);
   const { toast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
+
+  const updateTotalEta = useCallback(
+    (pct: number, etaSeconds?: number | null, totalEtaSeconds?: number | null) => {
+      const preferred = etaSeconds ?? totalEtaSeconds;
+      if (preferred !== null && preferred !== undefined && Number.isFinite(preferred)) {
+        setTotalTimeLeft(formatSeconds(preferred));
+        return;
+      }
+
+      if (!jobStartRef.current || pct <= 0) {
+        setTotalTimeLeft(formatSeconds(undefined));
+        return;
+      }
+
+      const elapsed = (Date.now() - jobStartRef.current) / 1000;
+      if (elapsed <= 0) {
+        setTotalTimeLeft(formatSeconds(undefined));
+        return;
+      }
+
+      const remaining = Math.max(0, (elapsed * (100 - pct)) / pct);
+      setTotalTimeLeft(formatSeconds(remaining));
+    },
+    []
+  );
+
+  const updateStageTimer = useCallback(
+    (status: JobStatus, stageEtaSeconds?: number | null) => {
+      const now = Date.now();
+      const previous = stageInfoRef.current;
+      const baselineDefault = STATUS_ETAS[status] ?? 10;
+
+      if (!previous || previous.status !== status) {
+        const baseline = stageEtaSeconds ?? baselineDefault;
+        stageInfoRef.current = { status, startedAt: now, baseline };
+        setStageTimeLeft(formatSeconds(baseline));
+        return;
+      }
+
+      const elapsed = (now - previous.startedAt) / 1000;
+      const updatedBaseline =
+        stageEtaSeconds !== null && stageEtaSeconds !== undefined
+          ? stageEtaSeconds + elapsed
+          : previous.baseline ?? baselineDefault;
+
+      stageInfoRef.current = {
+        status,
+        startedAt: previous.startedAt,
+        baseline: updatedBaseline,
+      };
+
+      const remaining = Math.max(0, updatedBaseline - elapsed);
+      setStageTimeLeft(formatSeconds(remaining));
+    },
+    []
+  );
 
   // Load remix payload from navigation state
   useEffect(() => {
@@ -211,8 +272,11 @@ const HomePage = () => {
     }
     setJob(null);
     setDisplayProgress(0);
-    setTotalTimeLeft('00:00');
-    setStageTimeLeft('00:00');
+    lastProgressRef.current = 0;
+    jobStartRef.current = null;
+    stageInfoRef.current = null;
+    setTotalTimeLeft(formatSeconds(undefined));
+    setStageTimeLeft(formatSeconds(undefined));
   }, []);
 
   useEffect(() => resetJob, [resetJob]);
@@ -347,17 +411,23 @@ const HomePage = () => {
     }
 
     const seed = Math.floor(Math.random() * 999999) + 1;
-    const estimatedTotal = STAGE_SEQUENCE.reduce((acc, status) => acc + (STATUS_ETAS[status] || 0), 0);
+    jobStartRef.current = Date.now();
+    stageInfoRef.current = {
+      status: 'planning',
+      startedAt: jobStartRef.current,
+      baseline: STATUS_ETAS['planning'] ?? 15,
+    };
+    lastProgressRef.current = 0;
 
     const baseJob: Job = {
       id: uuidv4(),
       status: 'planning',
-      progress: 5,
+      progress: 1,
       message: 'Contacting AI composer for master plan...',
       finalPlan: null,
       conditioningString: `Seed: ${seed}`,
       rca: null,
-      totalEta: estimatedTotal,
+      totalEta: undefined,
       step: 1,
       totalSteps: STAGE_SEQUENCE.length,
       audioUrl: null,
@@ -373,9 +443,9 @@ const HomePage = () => {
       languages: formState.languages,
     };
     setJob(baseJob);
-    animateProgress(5, 400);
-    setTotalTimeLeft(formatSeconds(estimatedTotal));
-    setStageTimeLeft(formatSeconds(STATUS_ETAS['planning'] || 0));
+    animateProgress(1, 250);
+    setTotalTimeLeft(formatSeconds(undefined));
+    setStageTimeLeft(formatSeconds(stageInfoRef.current?.baseline));
 
     try {
       const payload = {
@@ -417,6 +487,10 @@ const HomePage = () => {
               rca: event.error || 'Unknown error' 
             } : prev);
             toast(event.error, 'error');
+            jobStartRef.current = null;
+            stageInfoRef.current = null;
+            setTotalTimeLeft(formatSeconds(undefined));
+            setStageTimeLeft(formatSeconds(undefined));
             return;
           }
 
@@ -424,6 +498,10 @@ const HomePage = () => {
             const message = event.error || 'Generation failed.';
             setJob(prev => prev ? { ...prev, status: 'error', message, rca: message } : prev);
             toast(message, 'error');
+            jobStartRef.current = null;
+            stageInfoRef.current = null;
+            setTotalTimeLeft(formatSeconds(undefined));
+            setStageTimeLeft(formatSeconds(undefined));
             return;
           }
 
@@ -471,15 +549,21 @@ const HomePage = () => {
                   languages: formState.languages,
                 };
                 setJob(completedJob);
-                animateProgress(100, 600);
-                setTotalTimeLeft('00:00');
-                setStageTimeLeft('00:00');
+                animateProgress(100, 400);
+                setTotalTimeLeft(formatSeconds(0));
+                setStageTimeLeft(formatSeconds(0));
+                jobStartRef.current = null;
+                stageInfoRef.current = null;
                 saveJobToHistory(completedJob);
               })
               .catch(error => {
                 const message = error instanceof Error ? error.message : 'Failed to fetch job result';
                 setJob(prev => prev ? { ...prev, status: 'error', message, rca: message } : prev);
                 toast(message, 'error');
+                jobStartRef.current = null;
+                stageInfoRef.current = null;
+                setTotalTimeLeft(formatSeconds(undefined));
+                setStageTimeLeft(formatSeconds(undefined));
               })
               .finally(() => {
                 if (eventSourceRef.current) {
@@ -492,26 +576,27 @@ const HomePage = () => {
 
           if (!event.status) return;
 
-          const status = event.status as JobStatus;
+          const status = (event.status as JobStatus) || 'generating-instruments';
           const stageIndex = STAGE_SEQUENCE.indexOf(status);
           if (stageIndex !== -1) {
-            const stageEta = STATUS_ETAS[status] || 5;
-            const remaining = STAGE_SEQUENCE.slice(stageIndex + 1)
-              .reduce((acc, key) => acc + (STATUS_ETAS[key] || 0), stageEta);
-
             setJob(prev => prev ? {
               ...prev,
               status,
+              progress: event.pct ?? prev.progress,
               message: event.label || prev.message,
               step: stageIndex + 1,
               totalSteps: STAGE_SEQUENCE.length,
             } : prev);
-
-            const nextPct = event.pct ?? Math.min(99, lastProgressRef.current + 3);
-            animateProgress(nextPct, Math.max(400, stageEta * 700));
-            setStageTimeLeft(formatSeconds(stageEta));
-            setTotalTimeLeft(formatSeconds(stageEta + remaining));
           }
+
+          const nextPct =
+            event.pct !== undefined && event.pct !== null
+              ? Math.max(0, Math.min(99.5, event.pct))
+              : Math.min(99, lastProgressRef.current + 3);
+
+          animateProgress(nextPct, 450);
+          updateStageTimer(status, event.stageEtaSeconds ?? null);
+          updateTotalEta(nextPct, event.etaSeconds ?? null, event.totalEtaSeconds ?? null);
         },
         (err) => {
           console.error('SSE error', err);
@@ -522,8 +607,12 @@ const HomePage = () => {
       const message = error instanceof Error ? error.message : 'Failed to start generation.';
       toast(message, 'error');
       setJob(prev => prev ? { ...prev, status: 'error', message } : prev);
+      jobStartRef.current = null;
+      stageInfoRef.current = null;
+      setTotalTimeLeft(formatSeconds(undefined));
+      setStageTimeLeft(formatSeconds(undefined));
     }
-  }, [formState, toast, animateProgress]);
+  }, [formState, toast, animateProgress, updateStageTimer, updateTotalEta]);
 
   const handleCancel = () => {
     if (eventSourceRef.current) {
@@ -535,6 +624,10 @@ const HomePage = () => {
       progressAnimatorRef.current = null;
     }
     setJob(prev => prev ? { ...prev, status: 'cancelled', message: 'Generation cancelled by user.' } : prev);
+    jobStartRef.current = null;
+    stageInfoRef.current = null;
+    setTotalTimeLeft(formatSeconds(undefined));
+    setStageTimeLeft(formatSeconds(undefined));
   };
 
   const handleReset = () => {
@@ -558,8 +651,11 @@ const HomePage = () => {
     });
     setJob(null);
     setDisplayProgress(0);
-    setTotalTimeLeft('00:00');
-    setStageTimeLeft('00:00');
+    lastProgressRef.current = 0;
+    jobStartRef.current = null;
+    stageInfoRef.current = null;
+    setTotalTimeLeft(formatSeconds(undefined));
+    setStageTimeLeft(formatSeconds(undefined));
   };
 
   const isInProgress = job && !['complete', 'error', 'cancelled'].includes(job.status);

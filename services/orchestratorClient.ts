@@ -6,6 +6,9 @@ export type OrchestratorEvent = {
   pct?: number;
   status?: string;
   error?: string;
+  etaSeconds?: number;
+  stageEtaSeconds?: number;
+  totalEtaSeconds?: number;
 };
 
 export type OrchestratorResult = {
@@ -85,6 +88,44 @@ export function subscribeToJob(
   let pollCount = 0;
   const maxPolls = 60; // 2 minutes at 2s intervals for real generation
   const isMockJob = jobId.startsWith('mock-');
+
+  const pickNumber = (...values: unknown[]): number | undefined => {
+    for (const value of values) {
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        return value;
+      }
+    }
+    return undefined;
+  };
+
+  const normalizeStage = (stage?: string | null, status?: string | null): string => {
+    const value = (stage || '').toLowerCase();
+    switch (value) {
+      case 'planning':
+      case 'generating-instruments':
+      case 'synthesizing-vocals':
+      case 'mixing-mastering':
+      case 'rendering-video':
+      case 'finalizing':
+        return value;
+      case 'complete':
+        return 'finalizing';
+    }
+
+    const statusValue = (status || '').toLowerCase();
+    switch (statusValue) {
+      case 'pending':
+      case 'queued':
+        return 'planning';
+      case 'processing':
+      case 'running':
+        return 'generating-instruments';
+      case 'finalizing':
+        return 'finalizing';
+      default:
+        return 'generating-instruments';
+    }
+  };
   
   const poll = async () => {
     if (!polling) {
@@ -141,39 +182,89 @@ export function subscribeToJob(
       
       const job = await response.json();
       
+      const statusValue = (job.status || '').toLowerCase();
+      const etaSeconds = pickNumber(
+        job.remainingSeconds,
+        job.remaining_seconds,
+        job.etaSeconds,
+        job.eta_seconds,
+        job.eta
+      );
+      const totalEtaSeconds = pickNumber(
+        job.totalEtaSeconds,
+        job.total_eta_seconds,
+        job.estimatedSeconds,
+        job.estimated_seconds,
+        etaSeconds
+      );
+      const stageEtaSeconds = pickNumber(
+        job.stageEtaSeconds,
+        job.stage_eta_seconds,
+        job.stageRemainingSeconds,
+        job.stage_remaining_seconds
+      );
+
       // Map backend status to frontend with real-time progress
-      if (job.status === 'succeeded' || job.status === 'completed') {
-        onEvent({ status: 'complete', pct: 100, label: 'Complete! 🎉' });
+      if (statusValue === 'succeeded' || statusValue === 'completed' || statusValue === 'complete') {
+        onEvent({ status: 'complete', pct: 100, label: 'Complete! 🎉', etaSeconds: 0, totalEtaSeconds: 0, stageEtaSeconds: 0 });
         polling = false;
-      } else if (job.status === 'failed' || job.status === 'error') {
+      } else if (statusValue === 'failed' || statusValue === 'error') {
         onEvent({ status: 'error', error: job.error || job.message || 'Generation failed' });
         polling = false;
-      } else if (job.status === 'running' || job.status === 'processing') {
+      } else if (statusValue === 'running' || statusValue === 'processing') {
         // Use real backend progress data
-        const progress = typeof job.progress === 'number' ? Math.min(99, job.progress) : Math.min(95, Math.floor((pollCount / 60) * 100));
+        const progressRaw = pickNumber(
+          job.progress,
+          job.pct,
+          job.percentage,
+          job.percentComplete,
+          job.percent_complete
+        );
+        const progress =
+          progressRaw !== undefined
+            ? Math.min(99.5, Math.max(1, progressRaw))
+            : Math.min(95, Math.floor((pollCount / maxPolls) * 100));
         const message = job.message || job.label || 'Processing...';
-        const status = job.currentStage || 'generating-instruments';
-        
+        const stage = normalizeStage(job.currentStage, job.status);
+
         onEvent({ 
-          status: status, 
+          status: stage, 
           pct: progress,
-          label: message
+          label: message,
+          etaSeconds: etaSeconds,
+          totalEtaSeconds: totalEtaSeconds,
+          stageEtaSeconds,
         });
         setTimeout(poll, 1500); // Poll more frequently for real jobs
-      } else if (job.status === 'pending' || job.status === 'queued') {
+      } else if (statusValue === 'pending' || statusValue === 'queued') {
+        const pendingProgress = pickNumber(job.progress, job.pct, job.percentage, job.percentComplete);
+        const progress =
+          pendingProgress !== undefined
+            ? Math.max(1, Math.min(15, pendingProgress))
+            : 2;
         onEvent({ 
           status: 'planning', 
-          pct: 2,
-          label: job.message || 'Queued for processing...'
+          pct: progress,
+          label: job.message || 'Queued for processing...',
+          etaSeconds,
+          totalEtaSeconds: totalEtaSeconds ?? etaSeconds,
+          stageEtaSeconds,
         });
         setTimeout(poll, 3000); // Poll less frequently for queued jobs
       } else {
         // Handle any other status
-        const progress = typeof job.progress === 'number' ? job.progress : Math.min(50, Math.floor((pollCount / 60) * 100));
+        const genericProgress = pickNumber(job.progress, job.pct, job.percentage, job.percentComplete);
+        const progress =
+          genericProgress !== undefined
+            ? Math.min(95, Math.max(1, genericProgress))
+            : Math.min(50, Math.floor((pollCount / maxPolls) * 100));
         onEvent({ 
-          status: job.status || 'generating-instruments', 
+          status: normalizeStage(job.currentStage, job.status), 
           pct: progress,
-          label: job.message || job.label || 'Processing...'
+          label: job.message || job.label || 'Processing...',
+          etaSeconds,
+          totalEtaSeconds,
+          stageEtaSeconds,
         });
         setTimeout(poll, 2000);
       }
@@ -234,24 +325,72 @@ export async function fetchJobResult(jobId: string): Promise<OrchestratorResult>
     
     const job = await response.json();
     
-    if (job.status === 'succeeded' || job.status === 'completed') {
+    if (job.status === 'succeeded' || job.status === 'completed' || job.status === 'complete') {
+      const coerceUrl = (value?: string | null) => {
+        if (!value) return null;
+        if (/^https?:\/\//i.test(value) || value.startsWith('/')) {
+          return value;
+        }
+        return `/api/assets/${value.replace(/^\/+/, '')}`;
+      };
+
+      const extractFromAssets = (assetType: string) => {
+        if (!Array.isArray(job.assets)) return null;
+        const match = job.assets.find((asset: any) => {
+          const type = (asset?.type || asset?.kind || '').toLowerCase();
+          return type === assetType.toLowerCase();
+        });
+        if (!match) return null;
+        return coerceUrl(match.url || match.path);
+      };
+
+      const normalizeVideoMap = (input: any): Partial<Record<VideoStyle | string, string>> | null => {
+        if (!input || typeof input !== 'object') return null;
+        const entries = Object.entries(input)
+          .map(([style, value]) => {
+            const url = coerceUrl(typeof value === 'string' ? value : value?.url);
+            return url ? [style, url] : null;
+          })
+          .filter((entry): entry is [string, string] => Array.isArray(entry));
+        return entries.length ? Object.fromEntries(entries) : null;
+      };
+
+      const audioUrl =
+        coerceUrl(job.audioUrl) ??
+        coerceUrl(job.result?.audio) ??
+        extractFromAssets('audio') ??
+        extractFromAssets('mix') ??
+        extractFromAssets('preview');
+
+      const directVideoMap =
+        normalizeVideoMap(job.videoUrls) ?? normalizeVideoMap(job.result?.videos);
+
+      const singleVideo =
+        coerceUrl(job.result?.video) ??
+        coerceUrl(job.videoUrl) ??
+        extractFromAssets('video');
+
+      const videoUrls =
+        directVideoMap ??
+        (singleVideo
+          ? {
+              [job.videoStyle || 'lyric']: singleVideo,
+            }
+          : null);
+
+      let planData: any = job.result?.plan ?? job.plan ?? null;
+      if (typeof planData === 'string') {
+        try {
+          planData = JSON.parse(planData);
+        } catch {
+          // ignore parse errors and fall back to string form
+        }
+      }
+
       return {
-        audioUrl: job.result?.audio ? `/api/assets/${job.result.audio}` : job.audioUrl || null,
-        videoUrls: job.result?.videos ? 
-          // Handle multiple video styles
-          Object.fromEntries(
-            Object.entries(job.result.videos).map(([style, filename]) => [
-              style, 
-              `/api/assets/${filename}`
-            ])
-          ) : 
-          // Handle single video
-          job.result?.video ? { 
-            [job.videoStyle || 'lyric']: `/api/assets/${job.result.video}` 
-          } : 
-          // Handle direct video URLs
-          job.videoUrls || null,
-        plan: job.result?.plan || job.plan || null,
+        audioUrl: audioUrl || null,
+        videoUrls,
+        plan: planData,
       };
     } else if (job.status === 'failed' || job.status === 'error') {
       return { error: job.error || job.message || 'Generation failed' };

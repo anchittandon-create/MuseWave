@@ -40,6 +40,9 @@ const TagInput: React.FC<TagInputProps> = ({
     onChange(safeTags.filter(tag => tag !== tagToRemove));
   };
 
+  const showPlaceholder = safeTags.length === 0 && inputValue.trim().length === 0;
+  const activePlaceholder = showPlaceholder ? placeholder : '';
+
   return (
     <div className={cn(
       'flex flex-wrap gap-2 p-2 border border-input rounded-md bg-background min-h-[2.5rem]',
@@ -65,7 +68,7 @@ const TagInput: React.FC<TagInputProps> = ({
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
         onKeyDown={handleInputKeyDown}
-        placeholder={placeholder}
+        placeholder={activePlaceholder}
         disabled={disabled}
         className="flex-1 min-w-[120px] bg-transparent outline-none text-sm disabled:opacity-50"
       />
