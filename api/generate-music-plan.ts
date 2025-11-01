@@ -6,6 +6,7 @@ interface GenerateMusicPlanRequest {
   duration: number;
   mood?: string;
   artistInspiration?: string[];
+  creativitySeed?: number;
 }
 
 interface MusicPlan {
@@ -48,17 +49,39 @@ export default async function handler(
   }
 
   try {
-    const { prompt, genre, duration, mood, artistInspiration }: GenerateMusicPlanRequest = req.body;
+    const body = req.body;
+    
+    // Handle both request formats for compatibility
+    let prompt, genre, duration, mood, artistInspiration, creativitySeed;
+    
+    if (body.context) {
+      // Frontend service format: { context: { musicPrompt: "..." }, creativitySeed: 42 }
+      const context = body.context;
+      prompt = context.musicPrompt || context.prompt;
+      genre = Array.isArray(context.genres) ? context.genres[0] : context.genre;
+      duration = context.duration;
+      mood = context.mood;
+      artistInspiration = context.artistInspiration;
+      creativitySeed = body.creativitySeed;
+    } else {
+      // Direct API format: { prompt: "...", genre: "...", duration: 120 }
+      prompt = body.prompt;
+      genre = body.genre;
+      duration = body.duration;
+      mood = body.mood;
+      artistInspiration = body.artistInspiration;
+      creativitySeed = body.creativitySeed;
+    }
     
     if (!prompt || !genre || !duration) {
-      res.status(400).json({ error: 'Missing required fields: prompt, genre, duration' });
+      res.status(400).json({ error: 'Missing required fields: prompt/musicPrompt, genre, duration' });
       return;
     }
     
     // Try Gemini planning if available
     if (process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY) {
       try {
-        const plan = await generatePlanWithGemini({ prompt, genre, duration, mood, artistInspiration });
+        const plan = await generatePlanWithGemini({ prompt, genre, duration, mood, artistInspiration, creativitySeed });
         res.status(200).json({ plan });
         return;
       } catch (error) {
@@ -79,10 +102,12 @@ export default async function handler(
   }
 }
 
-async function generatePlanWithGemini(request: GenerateMusicPlanRequest): Promise<MusicPlan> {
+async function generatePlanWithGemini(request: any): Promise<MusicPlan> {
   const { GoogleGenerativeAI } = await import('@google/generative-ai');
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY!);
   const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+  const creativityNote = request.creativitySeed ? `\nCreativity Seed: ${request.creativitySeed} (use this for variation in your response)` : '';
 
   const prompt = `Create a detailed music production plan for:
 
@@ -90,13 +115,15 @@ Prompt: "${request.prompt}"
 Genre: ${request.genre}
 Duration: ${request.duration} seconds
 Mood: ${request.mood || 'Not specified'}
-Artist Inspiration: ${request.artistInspiration?.join(', ') || 'None'}
+Artist Inspiration: ${request.artistInspiration?.join(', ') || 'None'}${creativityNote}
 
 Generate a comprehensive music plan with:
 
 1. STRUCTURE: Break down the song into sections (intro, verse, chorus, bridge, outro, etc.) with precise timing
-2. ARRANGEMENT: Specify instruments, tempo (BPM), musical key, and time signature
+2. ARRANGEMENT: Specify instruments, tempo (BPM), musical key, and time signature  
 3. PRODUCTION: List effects, mixing techniques, and mastering approaches
+
+Make the plan specific to the ${request.genre} genre and ensure sections add up to exactly ${request.duration} seconds.
 
 Return ONLY a valid JSON object in this exact format:
 
