@@ -14,15 +14,20 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "@neondatabase/serverless": "^0.10.5",
     "@vercel/blob": "^2.0.0",
     "@vercel/node": "^5.5.3",
     "clsx": "2.1.1",
     "dotenv": "^17.2.3",
+    "fluent-ffmpeg": "^2.1.2",
+    "ffmpeg-static": "^5.2.0",
+    "@ffmpeg/ffmpeg": "^0.12.7",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "6.22.3",
     "tailwind-merge": "2.2.1",
-    "uuid": "9.0.1"
+    "uuid": "9.0.1",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
