@@ -83,88 +83,109 @@ export function subscribeToJob(
 ) {
   let polling = true;
   let pollCount = 0;
-  const maxPolls = 30; // 1 minute at 2s intervals for demo
+  const maxPolls = 60; // 2 minutes at 2s intervals for real generation
   const isMockJob = jobId.startsWith('mock-');
   
   const poll = async () => {
-    if (!polling || pollCount >= maxPolls) {
-      if (pollCount >= maxPolls) {
-        // Complete the mock job
-        onEvent({ status: 'complete', pct: 100, label: 'Mock generation complete! 🎉' });
-        polling = false;
-      }
+    if (!polling) {
       return;
     }
     
     pollCount++;
     
     if (isMockJob) {
-      // Simulate mock job progression
+      // Simulate mock job progression with more realistic stages
+      if (pollCount >= maxPolls) {
+        onEvent({ status: 'complete', pct: 100, label: 'Mock generation complete! 🎉' });
+        polling = false;
+        return;
+      }
+      
       const progress = Math.min(95, Math.floor((pollCount / maxPolls) * 100));
       const stages = [
-        'Planning your track...',
-        'Generating instruments...',
-        'Creating melodies...',
-        'Adding effects...',
-        'Finalizing audio...'
+        { status: 'planning', label: 'Planning your track...' },
+        { status: 'generating-instruments', label: 'Generating instruments...' },
+        { status: 'synthesizing-vocals', label: 'Creating melodies and vocals...' },
+        { status: 'mixing-mastering', label: 'Mixing and mastering...' },
+        { status: 'rendering-video', label: 'Rendering video content...' },
+        { status: 'finalizing', label: 'Finalizing output...' }
       ];
-      const stage = stages[Math.floor((pollCount / maxPolls) * stages.length)] || stages[stages.length - 1];
+      
+      const stageIndex = Math.floor((pollCount / maxPolls) * stages.length);
+      const stage = stages[Math.min(stageIndex, stages.length - 1)];
       
       onEvent({ 
-        status: 'generating-instruments', 
+        status: stage.status, 
         pct: progress,
-        label: stage
+        label: stage.label
       });
       
       setTimeout(poll, 2000);
       return;
     }
     
-    // Real backend polling
+    // Real backend polling - check backend-neo first
+    const backendUrl = process.env.BACKEND_NEO_URL || 'http://localhost:3001';
+    
     try {
-      const response = await fetch(`/api/jobs/${jobId}`);
+      // Try backend-neo jobs endpoint first
+      let response = await fetch(`${backendUrl}/api/jobs/${jobId}`);
+      
       if (!response.ok) {
-        throw new Error(`Job fetch failed: ${response.statusText}`);
+        // Fallback to vercel API endpoint
+        response = await fetch(`/api/jobs/${jobId}`);
+        if (!response.ok) {
+          throw new Error(`Job fetch failed: ${response.statusText}`);
+        }
       }
       
       const job = await response.json();
       
-      // Map backend status to frontend with accurate progress
-      if (job.status === 'succeeded') {
+      // Map backend status to frontend with real-time progress
+      if (job.status === 'succeeded' || job.status === 'completed') {
         onEvent({ status: 'complete', pct: 100, label: 'Complete! 🎉' });
         polling = false;
-      } else if (job.status === 'failed') {
-        onEvent({ status: 'error', error: job.error || 'Generation failed' });
+      } else if (job.status === 'failed' || job.status === 'error') {
+        onEvent({ status: 'error', error: job.error || job.message || 'Generation failed' });
         polling = false;
-      } else if (job.status === 'running') {
-        // Use backend progress and message if available
-        const progress = job.progress || Math.min(95, Math.floor((pollCount / 30) * 100));
-        const message = job.message || 'Generating audio stems...';
+      } else if (job.status === 'running' || job.status === 'processing') {
+        // Use real backend progress data
+        const progress = typeof job.progress === 'number' ? Math.min(99, job.progress) : Math.min(95, Math.floor((pollCount / 60) * 100));
+        const message = job.message || job.label || 'Processing...';
+        const status = job.currentStage || 'generating-instruments';
+        
         onEvent({ 
-          status: 'generating-instruments', 
+          status: status, 
           pct: progress,
           label: message
         });
-        setTimeout(poll, 2000);
+        setTimeout(poll, 1500); // Poll more frequently for real jobs
       } else if (job.status === 'pending' || job.status === 'queued') {
         onEvent({ 
           status: 'planning', 
-          pct: 5,
+          pct: 2,
           label: job.message || 'Queued for processing...'
         });
-        setTimeout(poll, 2000);
+        setTimeout(poll, 3000); // Poll less frequently for queued jobs
       } else {
+        // Handle any other status
+        const progress = typeof job.progress === 'number' ? job.progress : Math.min(50, Math.floor((pollCount / 60) * 100));
         onEvent({ 
-          status: job.status, 
-          pct: job.progress || 25,
-          label: job.message || 'Processing...'
+          status: job.status || 'generating-instruments', 
+          pct: progress,
+          label: job.message || job.label || 'Processing...'
         });
         setTimeout(poll, 2000);
       }
     } catch (err) {
       console.error('Job polling error:', err);
-      onError(err);
-      polling = false;
+      // Don't immediately fail - try a few more times
+      if (pollCount < 5) {
+        setTimeout(poll, 5000); // Retry in 5 seconds
+      } else {
+        onError(err);
+        polling = false;
+      }
     }
   };
   
@@ -184,7 +205,10 @@ export async function fetchJobResult(jobId: string): Promise<OrchestratorResult>
     // Return mock result for demo purposes
     return {
       audioUrl: '/test.wav', // Demo audio file
-      videoUrls: null, // No video in mock mode
+      videoUrls: {
+        lyric: '/test-lyric-video.mp4', // Mock lyric video
+        official: '/test-official-video.mp4', // Mock official video
+      },
       plan: {
         title: 'Mock Generated Track',
         genre: 'electronic',
@@ -194,28 +218,48 @@ export async function fetchJobResult(jobId: string): Promise<OrchestratorResult>
     };
   }
 
+  const backendUrl = process.env.BACKEND_NEO_URL || 'http://localhost:3001';
+
   try {
-    const response = await fetch(`/api/jobs/${jobId}`);
+    // Try backend-neo jobs endpoint first
+    let response = await fetch(`${backendUrl}/api/jobs/${jobId}`);
+    
     if (!response.ok) {
-      return { error: `Fetch failed: ${response.statusText}` };
+      // Fallback to vercel API endpoint
+      response = await fetch(`/api/jobs/${jobId}`);
+      if (!response.ok) {
+        return { error: `Fetch failed: ${response.statusText}` };
+      }
     }
     
     const job = await response.json();
     
-    if (job.status === 'succeeded') {
+    if (job.status === 'succeeded' || job.status === 'completed') {
       return {
-        audioUrl: job.result?.audio ? `/api/assets/${job.result.audio}` : null,
-        videoUrls: job.result?.video ? { 
-          [job.videoStyle || 'default']: `/api/assets/${job.result.video}` 
-        } : null,
-        plan: job.result?.plan || null,
+        audioUrl: job.result?.audio ? `/api/assets/${job.result.audio}` : job.audioUrl || null,
+        videoUrls: job.result?.videos ? 
+          // Handle multiple video styles
+          Object.fromEntries(
+            Object.entries(job.result.videos).map(([style, filename]) => [
+              style, 
+              `/api/assets/${filename}`
+            ])
+          ) : 
+          // Handle single video
+          job.result?.video ? { 
+            [job.videoStyle || 'lyric']: `/api/assets/${job.result.video}` 
+          } : 
+          // Handle direct video URLs
+          job.videoUrls || null,
+        plan: job.result?.plan || job.plan || null,
       };
-    } else if (job.status === 'failed') {
-      return { error: job.error || 'Generation failed' };
+    } else if (job.status === 'failed' || job.status === 'error') {
+      return { error: job.error || job.message || 'Generation failed' };
     } else {
       return { error: 'Job not complete' };
     }
   } catch (error) {
+    console.warn('[MuseWave] Failed to fetch from backend, trying local cache');
     return { 
       error: error instanceof Error ? error.message : 'Failed to fetch job result' 
     };

@@ -145,7 +145,7 @@ const MuseForgeForm = ({
           rows={3}
           disabled={isLoading}
           className="w-full p-2 bg-gray-800 border border-gray-700 rounded-md shadow-sm focus:ring-2 focus:ring-primary focus:border-primary disabled:opacity-50"
-          placeholder="e.g., An epic cinematic score for a space battle, with powerful drums and a soaring orchestral melody."
+          placeholder={formState.prompt ? "" : "e.g., An epic cinematic score for a space battle, with powerful drums and a soaring orchestral melody."}
         />
       </div>
 
@@ -163,7 +163,7 @@ const MuseForgeForm = ({
         <TagInput
           value={formState.genres}
           onChange={(v) => handleFieldChange('genres', v)}
-          placeholder="e.g., Techno, Ambient"
+          placeholder={formState.genres.length > 0 ? "" : "e.g., Techno, Ambient"}
           options={allGenres}
           disabled={isLoading}
         />
@@ -259,7 +259,7 @@ const MuseForgeForm = ({
         <TagInput
           value={formState.artists}
           onChange={(v) => handleFieldChange('artists', v)}
-          placeholder="e.g., Brian Eno, Aphex Twin"
+          placeholder={formState.artists.length > 0 ? "" : "e.g., Brian Eno, Aphex Twin"}
           disabled={isLoading}
         />
       </div>
@@ -281,8 +281,8 @@ const MuseForgeForm = ({
           onChange={(e) => handleFieldChange('lyrics', e.target.value)}
           rows={4}
           disabled={isLoading}
-          className="w-full p-2 bg-gray-800 border border-gray-700 rounded-md shadow-sm focus:ring-2 focus:ring-primary focus:ring-primary disabled:opacity-50"
-          placeholder="Verse 1:&#10;Floating through a calm, digital ocean&#10;Chorus:&#10;Under a sky of binary stars..."
+          className="w-full p-2 bg-gray-800 border border-gray-700 rounded-md shadow-sm focus:ring-2 focus:ring-primary focus:border-primary disabled:opacity-50"
+          placeholder={formState.lyrics ? "" : "Verse 1:\nFloating through a calm, digital ocean\nChorus:\nUnder a sky of binary stars..."}
         />
       </div>
 
@@ -300,7 +300,7 @@ const MuseForgeForm = ({
         <TagInput
           value={formState.languages}
           onChange={(v) => handleFieldChange('languages', v)}
-          placeholder="e.g., English, Hindi"
+          placeholder={formState.languages.length > 0 ? "" : "e.g., English, Hindi"}
           options={languageOptions}
           disabled={isLoading}
         />
