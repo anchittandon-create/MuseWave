@@ -81,8 +81,8 @@ const adaptPlan = (backendPlan: any, req: FormState, seed: number): MusicPlan =>
     const sectionType = mapSectionType(name);
     const durationBars = barsPerSection;
     const chordProgression: string[] = backendPlan?.chord_progressions?.[name] || [];
-    const lyricsForSection = backendPlan?.lyrics_lines
-      ?.filter((line: any) => line.section === name)
+    const lyricsForSection = (backendPlan?.lyrics_lines || [])
+      .filter((line: any) => line.section === name)
       ?.map((line: any) => line.text)
       .join(' ');
 
@@ -106,7 +106,7 @@ const adaptPlan = (backendPlan: any, req: FormState, seed: number): MusicPlan =>
     };
   });
 
-  const lyricsCombined = req.lyrics || backendPlan?.lyrics_lines?.map((l: any) => l.text).join('\n') || '';
+  const lyricsCombined = req.lyrics || (backendPlan?.lyrics_lines || []).map((l: any) => l.text).join('\n') || '';
 
   const cuePoints = {
     introEnd: Math.round(durationSec * 0.15),

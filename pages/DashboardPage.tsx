@@ -85,7 +85,7 @@ function DashboardPage() {
                                             </td>
                                             <td className="p-4 align-top hidden md:table-cell">
                                                 <div className="flex flex-wrap gap-1">
-                                                    {job.genres.map(g => (
+                                                    {(job.genres || []).map(g => (
                                                         <span key={g} className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{g}</span>
                                                     ))}
                                                 </div>
