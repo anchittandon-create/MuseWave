@@ -137,3 +137,4 @@ backend-neo/public/assets/
 
 # ffmpeg
 ffmpeg-static/
+.vercel
