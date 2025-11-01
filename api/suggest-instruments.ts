@@ -2,25 +2,8 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 
 interface SuggestInstrumentsRequest {
   context: {
-    prompt    if (genres.some((g: string) => ['house', 'techno', 'electronic'].includes(g))) {
-      if (instrumentCategories.synthesis.concat(instrumentCategories.drums).some(i => i.toLowerCase() === instrumentLower)) {
-        score += 3;
-      }
-    }
-    
-    if (genres.some((g: string) => ['dubstep', 'bass', 'trap'].includes(g))) {
-      if ([...instrumentCategories.bass, ...instrumentCategories.drums].some(i => i.toLowerCase() === instrumentLower)) {
-        score += 3;
-      }
-    }
-    
-    if (genres.some((g: string) => ['ambient', 'downtempo', 'chill'].includes(g))) {
-      if ([...instrumentCategories.texture, ...instrumentCategories.melodic].some(i => i.toLowerCase() === instrumentLower)) {
-        score += 3;
-      }
-    }
-    
-    if (genres.some((g: string) => ['rock', 'pop', 'alternative'].includes(g))) {es?: string[];
+    prompt?: string;
+    genres?: string[];
     mood?: string;
     artistInspiration?: string[];
   };
@@ -139,25 +122,25 @@ function suggestInstrumentsFallback(context: any): string[] {
     // Genre-based scoring
     const genres = (context.genres || []).map((g: string) => g.toLowerCase());
     
-    if (genres.some(g => ['house', 'techno', 'electronic'].includes(g))) {
+    if (genres.some((g: string) => ['house', 'techno', 'electronic'].includes(g))) {
       if (instrumentCategories.synthesis.concat(instrumentCategories.drums).some(i => i.toLowerCase() === instrumentLower)) {
         score += 3;
       }
     }
     
-    if (genres.some(g => ['dubstep', 'bass', 'trap'].includes(g))) {
+    if (genres.some((g: string) => ['dubstep', 'bass', 'trap'].includes(g))) {
       if ([...instrumentCategories.bass, ...instrumentCategories.drums].some(i => i.toLowerCase() === instrumentLower)) {
         score += 3;
       }
     }
     
-    if (genres.some(g => ['ambient', 'downtempo', 'chill'].includes(g))) {
+    if (genres.some((g: string) => ['ambient', 'downtempo', 'chill'].includes(g))) {
       if ([...instrumentCategories.texture, ...instrumentCategories.melodic].some(i => i.toLowerCase() === instrumentLower)) {
         score += 3;
       }
     }
     
-    if (genres.some(g => ['trance', 'progressive'].includes(g))) {
+    if (genres.some((g: string) => ['trance', 'progressive'].includes(g))) {
       if ([...instrumentCategories.synthesis, 'String Section', 'Brass Ensemble'].some(i => i.toLowerCase() === instrumentLower)) {
         score += 2;
       }
