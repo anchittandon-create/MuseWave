@@ -16,12 +16,44 @@ dist/
 # Vercel
 .vercel/
 
-# Environment variables
+# Environment variables - CRITICAL SECURITY
 .env
+.env.*
 .env*.local
 .env.development.local
 .env.test.local
 .env.production.local
+.env.production
+.env.staging
+.env.development
+.env.backup
+.envrc
+*.env
+**/backend/.env*
+**/backend-neo/.env*
+
+# API Keys and Secrets - NEVER COMMIT
+**/keys/
+**/*key*.json
+**/*secret*
+**/*credential*
+**/*token*
+**/*password*
+**/config/secrets*
+.secrets/
+secrets.json
+credentials.json
+service-account*.json
+
+# Authentication
+.auth/
+auth.json
+*.pem
+*.p12
+*.pfx
+*.key
+*.crt
+*.cert
 
 # Logs
 logs/
