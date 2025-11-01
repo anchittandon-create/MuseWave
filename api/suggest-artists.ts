@@ -29,7 +29,22 @@ export default async function handler(
   }
 
   try {
-    const { context }: SuggestArtistsRequest = req.body;
+    const body = req.body;
+    
+    // Handle both request formats for backward compatibility
+    let context;
+    if (body.context) {
+      // New format: { context: { ... } }
+      context = body.context;
+    } else {
+      // Legacy format: direct properties
+      context = {
+        prompt: body.prompt,
+        genres: body.genres,
+        mood: body.mood,
+        existingArtists: body.existingArtists
+      };
+    }
     
     // Try Gemini suggestions if available
     if (process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY) {

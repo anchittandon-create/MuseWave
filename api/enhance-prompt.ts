@@ -29,7 +29,25 @@ export default async function handler(
   }
 
   try {
-    const { context }: EnhancePromptRequest = req.body;
+    const body = req.body;
+    
+    // Handle both request formats for backward compatibility
+    let context;
+    if (body.context) {
+      // New format: { context: { prompt: "..." } }
+      context = body.context;
+    } else if (body.prompt) {
+      // Legacy format: { prompt: "..." }
+      context = { prompt: body.prompt };
+    } else {
+      // Extract from direct properties
+      context = {
+        prompt: body.prompt || 'Create a track',
+        genres: body.genres,
+        artistInspiration: body.artistInspiration,
+        mood: body.mood
+      };
+    }
     
     // Try Gemini enhancement if available
     if (process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY) {
