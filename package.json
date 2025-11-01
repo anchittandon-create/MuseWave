@@ -12,8 +12,6 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@google/genai": "latest",
-    "@rollup/rollup-darwin-arm64": "^4.52.5",
     "@vercel/blob": "^2.0.0",
     "clsx": "2.1.1",
     "dotenv": "^17.2.3",
@@ -38,6 +36,6 @@
     "vite": "^5.4.11"
   },
   "engines": {
-    "node": "20.x"
+    "node": "18.x"
   }
 }
