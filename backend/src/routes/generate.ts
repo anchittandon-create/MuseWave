@@ -4,28 +4,32 @@ import { safetyService } from '../services/safetyService.js';
 import { logger } from '../logger.js';
 
 const generateSchema = z.object({
-  prompt: z.string().min(1),
-  duration: z.number().int().positive().max(300), // 5 minutes max
-  includeVideo: z.boolean().default(false),
+  musicPrompt: z.string().min(1),
+  genres: z.array(z.string()).min(1),
+  durationSec: z.number().int().min(30).max(120),
+  artistInspiration: z.array(z.string()).optional(),
+  lyrics: z.string().optional(),
+  vocalLanguages: z.array(z.string()).optional(),
+  generateVideo: z.boolean().default(false),
+  videoStyles: z.array(z.enum(["Lyric Video", "Official Music Video", "Abstract Visualizer"])).optional(),
 });
 
 export const generateRoute: FastifyPluginAsync = async (app) => {
-  app.post('/generate', async (request, reply) => {
-    const body = request.body as any;
-    const { prompt, duration, includeVideo } = body;
+  app.post('/generate', {
+    schema: {
+      body: generateSchema,
+    },
+  }, async (request, reply) => {
+    const body = request.body as z.infer<typeof generateSchema>;
 
     // Safety check
-    const safety = await safetyService.checkContent(prompt);
+    const safety = await safetyService.checkContent(body.musicPrompt);
     if (!safety.safe) {
       return reply.code(400).send({ error: safety.reason });
     }
 
     // Enqueue job
-    const jobId = await app.queue.enqueue('music_generation', {
-      prompt,
-      duration,
-      includeVideo,
-    }, {
+    const jobId = await app.queue.enqueue('music_generation', body, {
       apiKeyId: request.apiKey?.id,
     });
 

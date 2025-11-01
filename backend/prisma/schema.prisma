@@ -13,6 +13,11 @@ model Job {
   prompt      String
   duration    Int
   includeVideo Boolean @default(false)
+  genres      String[]
+  artistInspiration String[] @default([])
+  lyrics      String?
+  vocalLanguages String[] @default([])
+  videoStyles String[] @default([])
   plan        String?
   error       String?
   result      String?

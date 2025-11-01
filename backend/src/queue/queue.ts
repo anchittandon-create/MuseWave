@@ -37,10 +37,14 @@ export class Queue extends EventEmitter {
     const job = await this.prisma.job.create({
       data: {
         status: 'pending',
-        prompt: params.prompt || '',
-        duration: params.duration || 30,
-        includeVideo: params.includeVideo || false,
-        plan: params.plan || null,
+        prompt: params.musicPrompt,
+        duration: params.durationSec,
+        includeVideo: params.generateVideo,
+        genres: params.genres,
+        artistInspiration: params.artistInspiration || [],
+        lyrics: params.lyrics,
+        vocalLanguages: params.vocalLanguages || [],
+        videoStyles: params.videoStyles || [],
         userId: options.apiKeyId,
       },
     });
@@ -238,11 +242,11 @@ export class Queue extends EventEmitter {
       const jobSvc = jobService(this.prisma);
 
       // Generate plan
-      const plan = await planService.generatePlan(job.prompt, job.duration);
+      const plan = await planService.generatePlan(job.prompt, job.duration, job.genres, job.artistInspiration);
 
       // Generate audio
       const audioPath = `/tmp/audio_${job.id}.wav`;
-      await audioService.generateAudio(plan, job.duration, audioPath);
+      await audioService.generateAudio(plan, job.duration, audioPath, job.lyrics, job.vocalLanguages);
 
       // Create audio asset
       const audioAssetId = await jobSvc.createAsset(job.id, 'audio', `file://${audioPath}`, 0);
@@ -252,7 +256,7 @@ export class Queue extends EventEmitter {
       if (job.includeVideo) {
         // Generate video
         const videoPath = `/tmp/video_${job.id}.mp4`;
-        await videoService.generateVideo(audioPath, plan, videoPath);
+        await videoService.generateVideo(audioPath, plan, videoPath, job.videoStyles);
 
         // Create video asset
         finalAssetId = await jobSvc.createAsset(job.id, 'video', `file://${videoPath}`, 0);
