@@ -1,7 +1,8 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-// import { PrismaClient } from '@prisma/client';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 
-// const prisma = new PrismaClient();
+const execAsync = promisify(exec);
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
@@ -9,19 +10,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // Check database connection
-    // await prisma.$queryRaw`SELECT 1`;
+    // Check ffmpeg availability
+    let ffmpegStatus = 'unavailable';
+    try {
+      await execAsync('ffmpeg -version');
+      ffmpegStatus = 'available';
+    } catch (error) {
+      ffmpegStatus = 'unavailable (fallback to WASM)';
+    }
+
+    // Check environment variables
+    const hasGeminiKey = !!(process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY);
+
+    res.status(200).json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      ffmpeg: ffmpegStatus,
+      gemini: hasGeminiKey ? 'configured' : 'using fallback',
+      backend: 'operational',
+      version: '1.0.0'
+    });
   } catch (error) {
-    return res.status(503).json({ status: 'unhealthy', database: 'down' });
+    res.status(503).json({ 
+      status: 'unhealthy', 
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
   }
-
-  // For ffmpeg, assume available in Vercel environment
-  const ffmpegOk = true; // Vercel has ffmpeg
-
-  res.status(200).json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    database: 'up', // Mock for now
-    ffmpeg: ffmpegOk ? 'available' : 'unavailable',
-  });
 }
