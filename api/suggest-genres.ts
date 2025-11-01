@@ -53,7 +53,7 @@ export default async function handler(
         res.status(200).json({ genres: suggestions });
         return;
       } catch (error) {
-        console.warn('Gemini genre suggestion failed, using fallback:', error.message);
+        console.warn('Gemini genre suggestion failed, using fallback:', error instanceof Error ? error.message : String(error));
       }
     }
     
@@ -65,7 +65,7 @@ export default async function handler(
     console.error('Genre suggestion error:', error);
     res.status(500).json({ 
       error: 'Genre suggestion failed',
-      debug: process.env.NODE_ENV === 'development' ? error.message : undefined
+      debug: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
     });
   }
 }

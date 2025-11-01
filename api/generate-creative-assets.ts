@@ -56,7 +56,7 @@ export default async function handler(
         res.status(200).json(assets);
         return;
       } catch (error) {
-        console.warn('Gemini creative assets generation failed, using fallback:', error.message);
+        console.warn('Gemini creative assets generation failed, using fallback:', error instanceof Error ? error.message : String(error));
       }
     }
     
@@ -68,7 +68,7 @@ export default async function handler(
     console.error('Creative assets generation error:', error);
     res.status(500).json({ 
       error: 'Creative assets generation failed',
-      debug: process.env.NODE_ENV === 'development' ? error.message : undefined
+      debug: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
     });
   }
 }

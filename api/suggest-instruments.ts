@@ -2,8 +2,25 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 
 interface SuggestInstrumentsRequest {
   context: {
-    prompt?: string;
-    genres?: string[];
+    prompt    if (genres.some((g: string) => ['house', 'techno', 'electronic'].includes(g))) {
+      if (instrumentCategories.synthesis.concat(instrumentCategories.drums).some(i => i.toLowerCase() === instrumentLower)) {
+        score += 3;
+      }
+    }
+    
+    if (genres.some((g: string) => ['dubstep', 'bass', 'trap'].includes(g))) {
+      if ([...instrumentCategories.bass, ...instrumentCategories.drums].some(i => i.toLowerCase() === instrumentLower)) {
+        score += 3;
+      }
+    }
+    
+    if (genres.some((g: string) => ['ambient', 'downtempo', 'chill'].includes(g))) {
+      if ([...instrumentCategories.texture, ...instrumentCategories.melodic].some(i => i.toLowerCase() === instrumentLower)) {
+        score += 3;
+      }
+    }
+    
+    if (genres.some((g: string) => ['rock', 'pop', 'alternative'].includes(g))) {es?: string[];
     mood?: string;
     artistInspiration?: string[];
   };
@@ -38,7 +55,7 @@ export default async function handler(
         res.status(200).json({ instruments: suggestions });
         return;
       } catch (error) {
-        console.warn('Gemini instrument suggestion failed, using fallback:', error.message);
+        console.warn('Gemini instrument suggestion failed, using fallback:', error instanceof Error ? error.message : String(error));
       }
     }
     
@@ -50,7 +67,7 @@ export default async function handler(
     console.error('Instrument suggestion error:', error);
     res.status(500).json({ 
       error: 'Instrument suggestion failed',
-      debug: process.env.NODE_ENV === 'development' ? error.message : undefined
+      debug: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
     });
   }
 }

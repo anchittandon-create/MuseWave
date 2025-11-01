@@ -62,7 +62,7 @@ export default async function handler(
         res.status(200).json({ plan });
         return;
       } catch (error) {
-        console.warn('Gemini plan generation failed, using fallback:', error.message);
+        console.warn('Gemini plan generation failed, using fallback:', error instanceof Error ? error.message : String(error));
       }
     }
     
@@ -74,7 +74,7 @@ export default async function handler(
     console.error('Music plan generation error:', error);
     res.status(500).json({ 
       error: 'Music plan generation failed',
-      debug: process.env.NODE_ENV === 'development' ? error.message : undefined
+      debug: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
     });
   }
 }

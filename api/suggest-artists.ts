@@ -53,7 +53,7 @@ export default async function handler(
         res.status(200).json({ artists: suggestions });
         return;
       } catch (error) {
-        console.warn('Gemini artist suggestion failed, using fallback:', error.message);
+        console.warn('Gemini artist suggestion failed, using fallback:', error instanceof Error ? error.message : String(error));
       }
     }
     
@@ -65,7 +65,7 @@ export default async function handler(
     console.error('Artist suggestion error:', error);
     res.status(500).json({ 
       error: 'Artist suggestion failed',
-      debug: process.env.NODE_ENV === 'development' ? error.message : undefined
+      debug: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
     });
   }
 }
@@ -129,16 +129,16 @@ function suggestArtistsFallback(context: any): string[] {
     const artistLower = artist.toLowerCase();
     
     // Score based on genre preferences
-    if (genres.some(g => ['house', 'techno', 'electronic'].includes(g))) {
+    if (genres.some((g: string) => ['house', 'techno', 'electronic'].includes(g))) {
       if (['deadmau5', 'eric prydz', 'calvin harris', 'disclosure'].some(a => artistLower.includes(a))) score += 2;
     }
-    if (genres.some(g => ['dubstep', 'bass', 'trap'].includes(g))) {
+    if (genres.some((g: string) => ['dubstep', 'bass', 'trap'].includes(g))) {
       if (['skrillex', 'flume', 'rl grime', 'baauer'].some(a => artistLower.includes(a))) score += 2;
     }
-    if (genres.some(g => ['ambient', 'downtempo', 'chill'].includes(g))) {
+    if (genres.some((g: string) => ['ambient', 'downtempo', 'chill'].includes(g))) {
       if (['bonobo', 'tycho', 'boards of canada', 'jon hopkins'].some(a => artistLower.includes(a))) score += 2;
     }
-    if (genres.some(g => ['trance', 'progressive'].includes(g))) {
+    if (genres.some((g: string) => ['trance', 'progressive'].includes(g))) {
       if (['above & beyond', 'armin van buuren', 'eric prydz'].some(a => artistLower.includes(a))) score += 2;
     }
     

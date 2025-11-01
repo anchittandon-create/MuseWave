@@ -112,7 +112,7 @@ export async function generateMusic(input: MusicGenerationRequest): Promise<Gene
     
   } catch (error) {
     console.error('Generation failed:', error);
-    throw new Error(`Music generation failed: ${error.message}`);
+    throw new Error(`Music generation failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -122,7 +122,7 @@ async function generateMusicPlan(input: MusicGenerationRequest): Promise<MusicPl
     try {
       return await generatePlanWithGemini(input);
     } catch (error) {
-      console.warn('Gemini plan generation failed, using fallback:', error.message);
+      console.warn('Gemini plan generation failed, using fallback:', error instanceof Error ? error.message : String(error));
     }
   }
   

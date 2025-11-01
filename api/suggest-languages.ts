@@ -38,7 +38,7 @@ export default async function handler(
         res.status(200).json({ languages: suggestions });
         return;
       } catch (error) {
-        console.warn('Gemini language suggestion failed, using fallback:', error.message);
+        console.warn('Gemini language suggestion failed, using fallback:', error instanceof Error ? error.message : String(error));
       }
     }
     
@@ -50,7 +50,7 @@ export default async function handler(
     console.error('Language suggestion error:', error);
     res.status(500).json({ 
       error: 'Language suggestion failed',
-      debug: process.env.NODE_ENV === 'development' ? error.message : undefined
+      debug: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
     });
   }
 }
@@ -104,16 +104,16 @@ function suggestLanguagesFallback(context: any): string[] {
     // Genre-based scoring
     const genres = (context.genres || []).map((g: string) => g.toLowerCase());
     
-    if (genres.some(g => ['house', 'techno', 'electronic'].includes(g))) {
+    if (genres.some((g: string) => ['house', 'techno', 'electronic'].includes(g))) {
       if (['english', 'french', 'german'].includes(languageLower)) score += 2;
     }
-    if (genres.some(g => ['latin', 'reggaeton', 'tropical'].includes(g))) {
+    if (genres.some((g: string) => ['latin', 'reggaeton', 'tropical'].includes(g))) {
       if (['spanish', 'portuguese'].includes(languageLower)) score += 3;
     }
-    if (genres.some(g => ['ambient', 'new age', 'world'].includes(g))) {
+    if (genres.some((g: string) => ['ambient', 'new age', 'world'].includes(g))) {
       if (['japanese', 'mandarin', 'hindi', 'arabic'].includes(languageLower)) score += 2;
     }
-    if (genres.some(g => ['pop', 'mainstream', 'commercial'].includes(g))) {
+    if (genres.some((g: string) => ['pop', 'mainstream', 'commercial'].includes(g))) {
       if (['english', 'spanish', 'french'].includes(languageLower)) score += 2;
     }
     

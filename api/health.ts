@@ -33,7 +33,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch (error) {
     res.status(503).json({ 
       status: 'unhealthy', 
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
       timestamp: new Date().toISOString()
     });
   }
