@@ -10,11 +10,11 @@
     "preview": "vite preview",
     "smoke": "npm run build && node scripts/smoke-playwright.mjs",
     "prepare": "husky",
-    "postinstall": "node scripts/fix-rollup-native.js"
+    "postinstall": "node scripts/fix-rollup-native.mjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
-    "@neondatabase/serverless": "^0.10.5",
+    "@neondatabase/serverless": "^1.0.2",
     "@vercel/blob": "^2.0.0",
     "@vercel/node": "^5.5.3",
     "clsx": "2.1.1",

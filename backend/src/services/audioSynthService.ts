@@ -232,12 +232,12 @@ export class AudioSynthService {
           // Add silence if needed
           if (event.time > currentTime) {
             const silenceDuration = event.time - currentTime;
-            concatList.push(`file ${path.join(tempDir, 'silence.wav')}`);
-            // Create a tiny silence file
-            await execAsync(`ffmpeg -f lavfi -i anullsrc=r=44100:cl=stereo -t ${silenceDuration} -y "${path.join(tempDir, 'silence.wav')}"`);
+            const silencePath = path.join(tempDir, `silence_${instrument}_${i}.wav`);
+            await execAsync(`ffmpeg -f lavfi -i anullsrc=r=44100:cl=stereo -t ${silenceDuration} -y "${silencePath}"`);
+            concatList.push(`file '${silencePath}'`);
           }
 
-          concatList.push(`file ${samplePath}`);
+          concatList.push(`file '${samplePath}'`);
           currentTime = event.time + event.duration;
         }
 
@@ -261,10 +261,10 @@ export class AudioSynthService {
             const silenceDuration = event.time - currentTime;
             const silencePath = path.join(tempDir, `silence_${instrument}_${currentTime}.wav`);
             await execAsync(`ffmpeg -f lavfi -i anullsrc=r=44100:cl=mono -t ${silenceDuration} -y "${silencePath}"`);
-            concatList.push(`file ${silencePath}`);
+            concatList.push(`file '${silencePath}'`);
           }
 
-          concatList.push(`file ${samplePath}`);
+          concatList.push(`file '${samplePath}'`);
           currentTime = event.time + event.duration;
         }
 

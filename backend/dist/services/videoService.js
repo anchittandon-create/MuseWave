@@ -25,14 +25,22 @@ export class VideoService {
         }
         logger.info({ outputPath, style }, 'Video generation complete');
     }
+    escapeFilterPath(filePath) {
+        return filePath
+            .replace(/\\/g, '\\\\')
+            .replace(/:/g, '\\:')
+            .replace(/'/g, "\\\\'")
+            .replace(/ /g, '\\ ');
+    }
     async generateLyricVideo(audioPath, lyrics, duration, bpm, outputPath) {
         const tempDir = path.dirname(outputPath);
         const srtPath = path.join(tempDir, 'captions.srt');
         // Generate SRT captions
         const srtContent = await vocalService.generateSRT(lyrics, duration, bpm);
         await writeFile(srtPath, srtContent);
+        const escapedSrt = this.escapeFilterPath(srtPath);
         // Generate video with subtitles
-        const cmd = `ffmpeg -i "${audioPath}" -f lavfi -i color=c=black:s=1280x720:d=${duration} -vf "subtitles=${srtPath}:force_style='FontName=Arial,FontSize=24,PrimaryColour=&HFFFFFF,OutlineColour=&H000000,Alignment=2',format=yuv420p,scale=1280:720" -r 30 -shortest -pix_fmt yuv420p -y "${outputPath}"`;
+        const cmd = `ffmpeg -i "${audioPath}" -f lavfi -i color=c=black:s=1280x720:d=${duration} -vf "subtitles='${escapedSrt}':force_style='FontName=Arial,FontSize=24,PrimaryColour=&HFFFFFF,OutlineColour=&H000000,Alignment=2',format=yuv420p,scale=1280:720" -r 30 -shortest -pix_fmt yuv420p -y "${outputPath}"`;
         await execAsync(cmd);
         // Clean up
         try {
