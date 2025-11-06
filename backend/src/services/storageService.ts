@@ -16,7 +16,7 @@ export class StorageService {
    * Store a file in the asset storage with proper directory structure
    * Returns the public URL path
    */
-  async storeFile(sourcePath: string, fileExtension: string): Promise<string> {
+  async storeFile(sourcePath: string, fileExtension: string): Promise<{ url: string; filePath: string }> {
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -36,8 +36,11 @@ export class StorageService {
     await copyFile(sourcePath, targetPath);
     logger.info({ sourcePath, targetPath }, 'File stored successfully');
 
-    // Return public URL path
-    return `/assets/${year}/${month}/${filename}`;
+    // Return public URL path and filesystem path
+    return {
+      url: `/assets/${year}/${month}/${filename}`,
+      filePath: targetPath,
+    };
   }
 
   /**

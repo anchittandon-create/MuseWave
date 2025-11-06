@@ -5,7 +5,7 @@ import { planService } from '../src/services/planService';
 import { audioService } from '../src/services/audioService';
 import { videoService } from '../src/services/videoService';
 import { storageService } from '../src/services/storageService';
-import { stat } from 'fs/promises';
+import { stat, unlink } from 'fs/promises';
 
 const prisma = new PrismaClient();
 
@@ -47,18 +47,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     );
 
     // Generate audio
-    const audioPath = `/tmp/audio_${Date.now()}.wav`;
+    const tempAudioPath = `/tmp/audio_${Date.now()}.wav`;
     await audioService.generateAudio(
       plan,
       body.durationSec,
-      audioPath,
+      tempAudioPath,
       body.lyrics,
       body.vocalLanguages
     );
 
     // Store audio
-    const audioUrl = await storageService.storeFile(audioPath, 'wav');
-    const audioStats = await stat(audioPath);
+    const audioUpload = await storageService.storeFile(tempAudioPath, 'wav');
+    const audioStats = await stat(audioUpload.filePath);
+    await unlink(tempAudioPath).catch(() => {});
 
     // Create job record
     const job = await prisma.job.create({
@@ -77,15 +78,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     // Create audio asset
-    await prisma.asset.create({
+    const audioAsset = await prisma.asset.create({
       data: {
         jobId: job.id,
         type: 'audio',
-        url: audioUrl,
-        path: audioPath,
+        url: audioUpload.url,
+        path: audioUpload.filePath,
         size: audioStats.size,
       },
     });
+    const audioUrl = `/api/assets/${audioAsset.id}`;
 
     const result: any = {
       bpm: plan.bpm,
@@ -100,29 +102,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Generate video if requested
     if (body.generateVideo) {
-      const videoPath = `/tmp/video_${Date.now()}.mp4`;
+      const tempVideoPath = `/tmp/video_${Date.now()}.mp4`;
       await videoService.generateVideo(
-        audioPath,
+        tempAudioPath,
         plan,
-        videoPath,
+        tempVideoPath,
         body.videoStyles,
         body.lyrics
       );
 
-      const videoUrl = await storageService.storeFile(videoPath, 'mp4');
-      const videoStats = await stat(videoPath);
+      const videoUpload = await storageService.storeFile(tempVideoPath, 'mp4');
+      const videoStats = await stat(videoUpload.filePath);
+      await unlink(tempVideoPath).catch(() => {});
 
-      await prisma.asset.create({
+      const videoAsset = await prisma.asset.create({
         data: {
           jobId: job.id,
           type: 'video',
-          url: videoUrl,
-          path: videoPath,
+          url: videoUpload.url,
+          path: videoUpload.filePath,
           size: videoStats.size,
         },
       });
 
-      result.assets.videoUrl = videoUrl;
+      result.assets.videoUrl = `/api/assets/${videoAsset.id}`;
     }
 
     // Update job result

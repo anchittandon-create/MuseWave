@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { stat } from 'fs/promises';
+import { stat, unlink } from 'fs/promises';
 import { logger } from '../logger.js';
 import { jobCount } from '../metrics.js';
 import { storageService } from './storageService.js';
@@ -32,7 +32,7 @@ export class JobService {
       const extension = type === 'video' ? 'mp4' : 'wav';
       
       // Store the file and get public URL
-      const publicUrl = await storageService.storeFile(tempPath, extension);
+      const upload = await storageService.storeFile(tempPath, extension);
 
       // Get file size if not provided
       let fileSize = size;
@@ -50,13 +50,14 @@ export class JobService {
         data: {
           jobId,
           type,
-          url: publicUrl,
-          path: tempPath,
+          url: upload.url,
+          path: upload.filePath,
           size: fileSize,
         },
       });
 
-      logger.info({ jobId, assetId: asset.id, type, publicUrl }, 'Asset created');
+      logger.info({ jobId, assetId: asset.id, type, url: upload.url }, 'Asset created');
+      await unlink(tempPath).catch(() => {});
       return asset.id;
     } catch (error) {
       logger.error({ error, jobId, type }, 'Failed to create asset');
