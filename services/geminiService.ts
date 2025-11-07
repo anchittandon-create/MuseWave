@@ -142,13 +142,23 @@ const callAiEndpoint = async <T,>(
 
 const buildEnhancedPromptFallback = (context: any): { prompt: string } => {
   if (context?.prompt && typeof context.prompt === 'string' && context.prompt.trim()) {
+    const genreNote = context?.genres?.length ? `Keep it rooted in ${context.genres.join(', ')}.` : 'Blend cinematic electronica with modern club sensibilities.';
+    const structure = `Open with a sparse intro, rise into layered verses, unleash a towering chorus, then land in an emotive outro.`;
+    const instrumentation = `Feature evolving analog pads, punchy drum machines, granular vocal chops, and a bassline that ducks with sidechain compression.`;
+    const production = `Use lush stereo delays, shimmer reverbs, subtle tape saturation, and automate filters to create tension/release.`;
     return {
-      prompt: `${context.prompt}, with cascading arpeggios and atmospheric textures perfect for late-night drives`,
+      prompt: `${context.prompt.trim()}\n${genreNote}\n${structure}\n${instrumentation}\n${production}`,
     };
   }
   const genre = (context?.genres?.[0] as string | undefined)?.toLowerCase() || 'electronic';
   const template = pickRandom(ENHANCED_PROMPT_TEMPLATES);
-  return { prompt: template.replace('{genre}', genre) };
+  const detailLines = [
+    `Structure the journey as: atmospheric intro → groove-focused verse → explosive chorus → breakdown → euphoric finale.`,
+    `Instrumentation: layered polysynth chords, expressive monosynth lead, textured percussion loops, and tactile Foley one-shots.`,
+    `Production directives: sidechain the pads to the kick, automate low-pass filters for build-ups, and sprinkle reversed vocal swells.`,
+    `Mood words: neon-drenched, widescreen, kinetic, introspective.`,
+  ];
+  return { prompt: `${template.replace('{genre}', genre)}\n${detailLines.join('\n')}` };
 };
 
 const buildGenreFallback = (context: any): { genres: string[] } => {

@@ -9,23 +9,26 @@ import DashboardPage from './pages/DashboardPage';
 import { Toaster } from './components/Toaster';
 // FIX: Changed import path to point to .tsx file.
 import { ToastProvider } from './hooks/useToast';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 function App() {
   return (
     <HashRouter>
       <ToastProvider>
-        <div className="min-h-screen w-full bg-background text-foreground flex">
-          <MainSidebar />
-          <main className="flex-1 flex flex-col">
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/n8n-workflow" element={<PlaceholderPage title="n8n Workflow" message="Display n8n workflow JSON here." />} />
-              <Route path="/replication-prompt" element={<PlaceholderPage title="Replication Prompt" message="This page would display the replication prompt." />} />
-            </Routes>
-          </main>
-        </div>
-        <Toaster />
+        <ErrorBoundary>
+          <div className="min-h-screen w-full bg-background text-foreground flex">
+            <MainSidebar />
+            <main className="flex-1 flex flex-col">
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/n8n-workflow" element={<PlaceholderPage title="n8n Workflow" message="Display n8n workflow JSON here." />} />
+                <Route path="/replication-prompt" element={<PlaceholderPage title="Replication Prompt" message="This page would display the replication prompt." />} />
+              </Routes>
+            </main>
+          </div>
+          <Toaster />
+        </ErrorBoundary>
       </ToastProvider>
     </HashRouter>
   );
