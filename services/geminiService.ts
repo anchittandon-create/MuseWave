@@ -310,9 +310,7 @@ export const enhancePrompt = async (context: any) => {
     return result;
   }
 
-  const fallback = buildEnhancedPromptFallback(context);
-  aiCache.set('enhancePrompt', context, fallback, ULTRA_CACHE_TTL.ENHANCED_PROMPT);
-  return fallback;
+  return buildEnhancedPromptFallback(context);
 };
 
 export const suggestGenres = async (context: any) => {
@@ -329,9 +327,7 @@ export const suggestGenres = async (context: any) => {
     }
   }
 
-  const fallback = buildGenreFallback(context);
-  aiCache.set('suggestGenres', context, fallback, ULTRA_CACHE_TTL.GENRE_SUGGESTIONS);
-  return fallback;
+  return buildGenreFallback(context);
 };
 
 export const suggestArtists = async (context: any) => {
@@ -348,9 +344,7 @@ export const suggestArtists = async (context: any) => {
     }
   }
 
-  const fallback = buildArtistFallback(context);
-  aiCache.set('suggestArtists', context, fallback, ULTRA_CACHE_TTL.ARTIST_SUGGESTIONS);
-  return fallback;
+  return buildArtistFallback(context);
 };
 
 export const suggestLanguages = async (context: any) => {
@@ -370,9 +364,7 @@ export const suggestLanguages = async (context: any) => {
     }
   }
 
-  const fallback = buildLanguageFallback();
-  aiCache.set('suggestLanguages', context, fallback, ULTRA_CACHE_TTL.GENRE_SUGGESTIONS);
-  return fallback;
+  return buildLanguageFallback();
 };
 
 export const suggestInstruments = async (context: any) => {
@@ -392,9 +384,7 @@ export const suggestInstruments = async (context: any) => {
     }
   }
 
-  const fallback = buildInstrumentFallback();
-  aiCache.set('suggestInstruments', context, fallback, ULTRA_CACHE_TTL.GENRE_SUGGESTIONS);
-  return fallback;
+  return buildInstrumentFallback();
 };
 
 export const enhanceLyrics = async (context: any) => {
@@ -408,9 +398,7 @@ export const enhanceLyrics = async (context: any) => {
     return result;
   }
 
-  const fallback = buildLyricsFallback(context);
-  aiCache.set('enhanceLyrics', context, fallback, ULTRA_CACHE_TTL.LYRICS);
-  return fallback;
+  return buildLyricsFallback(context);
 };
 
 export async function generateMusicPlan(
@@ -428,11 +416,14 @@ export async function generateMusicPlan(
   );
 
   const plan =
-    sanitizePlan((remote && 'plan' in (remote as any) ? (remote as any).plan : remote) ?? null) ??
-    createMockPlan(fullPrompt, creativitySeed);
+    sanitizePlan((remote && 'plan' in (remote as any) ? (remote as any).plan : remote) ?? null);
 
-  aiCache.set('generateMusicPlan', cacheKey, plan, ULTRA_CACHE_TTL.MUSIC_PLAN);
-  return plan;
+  if (plan) {
+    aiCache.set('generateMusicPlan', cacheKey, plan, ULTRA_CACHE_TTL.MUSIC_PLAN);
+    return plan;
+  }
+
+  return createMockPlan(fullPrompt, creativitySeed);
 }
 
 export async function auditMusicPlan(plan: MusicPlan, originalRequest: any) {
