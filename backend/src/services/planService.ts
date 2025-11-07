@@ -123,86 +123,387 @@ export class PlanService {
 
     const model = this.genAI.getGenerativeModel({ model: 'gemini-pro' });
 
-    const promptText = `You are an expert music producer and composer with deep knowledge of music theory, production techniques, and various musical genres. Your task is to create a HIGHLY DETAILED and COMPREHENSIVE music production plan.
+    const promptText = `You are an elite music producer, composer, and sound designer with 20+ years of experience across multiple genres. You've worked with major labels, scored films, and produced chart-topping tracks. Your deep knowledge of music theory, audio engineering, synthesis, mixing, and mastering makes you the perfect guide for creating detailed music production plans.
 
-**USER REQUEST:**
-- Prompt: "${prompt}"
-- Duration: ${duration} seconds (${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')})
-- Primary Genres: ${genres?.join(', ') || 'any genre that fits the prompt'}
-- Artist/Producer Inspiration: ${artistInspiration?.join(', ') || 'use your creative judgment'}
+═══════════════════════════════════════════════════════════════════════════════
+                            USER'S CREATIVE VISION
+═══════════════════════════════════════════════════════════════════════════════
 
-**IMPORTANT INSTRUCTIONS:**
-1. Analyze the user's prompt deeply - consider the mood, energy level, imagery, and emotional intent
-2. Choose a BPM that matches the genre conventions and desired energy:
-   - Lofi/Trip-hop: 70-90 BPM
-   - Hip-hop: 85-115 BPM
-   - House: 120-130 BPM
-   - Techno: 125-135 BPM
-   - Drum & Bass: 160-180 BPM
-   - Ambient/Downtempo: 60-90 BPM
-3. Select a musical key that evokes the right emotion:
-   - Minor keys (Am, Dm, Em, Gm, Cm) for melancholic, introspective, dark moods
-   - Major keys (C, G, D, F, A) for uplifting, happy, energetic moods
-   - Modal scales (Dorian, Mixolydian) for jazzy, sophisticated feels
-4. Create a detailed song structure with SPECIFIC descriptions for each section
-5. List instruments that are authentic to the genre and production style
-6. Define the overall mood with nuanced descriptors
+**Primary Request:** "${prompt}"
 
-**DETAILED STRUCTURE REQUIREMENTS:**
-- For ${duration} second tracks, create 4-6 distinct sections
-- Each section should have:
-  * A clear name (Intro, Verse 1, Pre-Chorus, Chorus, Bridge, Break, Build-up, Drop, Outro, etc.)
-  * Exact duration in seconds that adds up to ${duration} total
-  * A DETAILED description (at least 2-3 sentences) explaining:
-    - What musical elements are introduced or emphasized
-    - The emotional journey or narrative arc
-    - Specific production techniques (filters, reverb, layering, etc.)
-    - Melodic or rhythmic characteristics
-    - How it connects to adjacent sections
+**Duration Target:** ${duration} seconds (${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')})
 
-**GENRE-SPECIFIC CONSIDERATIONS:**
+**Genre Palette:** ${genres && genres.length > 0 ? genres.join(', ') : 'Open to any genre that authentically serves the creative vision'}
+
+**Artistic References:** ${artistInspiration && artistInspiration.length > 0 ? artistInspiration.join(', ') : 'Draw from your vast experience across the musical landscape'}
+
+═══════════════════════════════════════════════════════════════════════════════
+                         YOUR COMPREHENSIVE TASK
+═══════════════════════════════════════════════════════════════════════════════
+
+You must create a HIGHLY DETAILED, PROFESSIONAL-GRADE music production plan that would be used in an actual studio session. This isn't a simple outline - it's a complete creative blueprint.
+
+**ANALYTICAL DEPTH REQUIRED:**
+
+1. **Emotional & Psychological Analysis** (200+ words)
+   - What emotions does the user's prompt evoke?
+   - What imagery, memories, or sensations does it conjure?
+   - What's the psychological journey you want the listener to experience?
+   - How will you translate abstract concepts into sonic elements?
+   - What's the intended use case? (study, party, meditation, workout, etc.)
+
+2. **Genre & Style Considerations** (150+ words)
+   - What genre(s) best serve this vision and why?
+   - What are the canonical examples from this genre?
+   - What production techniques define this style?
+   - What are the common pitfalls to avoid?
+   - How can we put a fresh spin on genre conventions?
+
+3. **Technical Production Philosophy** (150+ words)
+   - What's the overall mix philosophy? (spacious, dense, minimal, maximal)
+   - What frequency spectrum strategy will you use?
+   - How will you handle dynamics and transients?
+   - What's the reverb/delay/spatial approach?
+   - How will you create depth and dimension?
+
 ${genres && genres.length > 0 ? `
-Primary Genre: ${genres[0]}
-${this.getGenreGuidance(genres[0])}
-` : 'Use your expertise to match the prompt'}
+═══════════════════════════════════════════════════════════════════════════════
+                    GENRE-SPECIFIC PRODUCTION INTELLIGENCE
+═══════════════════════════════════════════════════════════════════════════════
 
-${artistInspiration && artistInspiration.length > 0 ? `
-**ARTIST INSPIRATION ANALYSIS:**
-Consider the production styles of: ${artistInspiration.join(', ')}
-- What makes their sound unique?
-- What instruments, effects, or techniques do they use?
-- What emotional quality defines their music?
-- How can we capture that essence in this track?
+**Primary Genre: ${genres[0].toUpperCase()}**
+
+${this.getGenreGuidance(genres[0])}
+
+**Cross-Genre Synthesis:**
+${genres.length > 1 ? `You're blending ${genres.join(' + ')}. Consider:
+- Which genre provides the rhythmic foundation?
+- Which genre influences the melodic/harmonic approach?
+- How do you balance competing aesthetic priorities?
+- What unique hybrid characteristics can emerge?
+- What production techniques bridge these styles?` : 'Focus deeply on authentic ' + genres[0] + ' production while allowing room for creative innovation.'}
 ` : ''}
 
-**OUTPUT FORMAT:**
-Return ONLY a valid JSON object (no markdown, no explanation) with this EXACT structure:
+${artistInspiration && artistInspiration.length > 0 ? `
+═══════════════════════════════════════════════════════════════════════════════
+                       ARTIST INSPIRATION DEEP DIVE
+═══════════════════════════════════════════════════════════════════════════════
+
+**Referenced Artists/Producers:** ${artistInspiration.join(', ')}
+
+For EACH artist, analyze and incorporate:
+
+1. **Signature Production Techniques**
+   - What effects chains do they favor?
+   - What mixing approaches define their sound?
+   - What synthesis methods do they employ?
+   - How do they handle space and reverb?
+
+2. **Sonic Fingerprints**
+   - What frequencies do they emphasize?
+   - What's their typical compression approach?
+   - How do they handle the low end?
+   - What's their stereo imaging philosophy?
+
+3. **Compositional DNA**
+   - What chord progressions do they gravitate toward?
+   - What's their melodic vocabulary?
+   - How do they structure their arrangements?
+   - What rhythmic signatures appear repeatedly?
+
+4. **Emotional Signature**
+   - What mood do they consistently evoke?
+   - How do they handle tension and release?
+   - What's their approach to dynamics?
+   - How do they create their unique emotional impact?
+
+**Synthesis Strategy:**
+Don't just copy these artists - distill their essence and blend it with fresh ideas to create something that honors their influence while standing on its own.
+` : ''}
+
+═══════════════════════════════════════════════════════════════════════════════
+                         MUSICAL ARCHITECTURE
+═══════════════════════════════════════════════════════════════════════════════
+
+**BPM SELECTION** (Critical Decision):
+
+Consider the genre conventions:
+- Lofi/Chillhop: 70-90 BPM (laid-back, study-ready groove)
+- Hip-hop/Boom Bap: 85-95 BPM (head-nodding, powerful)
+- Hip-hop/Trap: 130-150 BPM (half-time feel, modern)
+- House (Deep/Tech): 120-125 BPM (deep groove, club-ready)
+- House (Progressive/Electro): 126-130 BPM (driving, energetic)
+- Techno (Minimal): 125-130 BPM (hypnotic, precise)
+- Techno (Peak Time): 130-135 BPM (relentless, industrial)
+- Trance: 136-142 BPM (euphoric, building)
+- Drum & Bass: 170-180 BPM (fast breaks, intense)
+- Dubstep/Halftime: 140-150 BPM (heavy, wobble)
+- Ambient/Downtempo: 60-90 BPM (spacious, meditative)
+- Pop: 100-130 BPM (varied, accessible)
+- Rock/Indie: 90-140 BPM (human feel, dynamic)
+- Jazz/Fusion: 80-180 BPM (varied, expressive)
+
+Choose a BPM that serves the EMOTION, not just the genre.
+
+**KEY & HARMONIC FRAMEWORK** (Essential Foundation):
+
+Minor Keys (Melancholic, Introspective, Dark):
+- A minor: Natural, versatile, slightly dark
+- D minor: The "saddest" key, deeply emotional
+- E minor: Open, contemplative, guitar-friendly
+- B minor: Rich, complex, emotionally dense
+- C minor: Dark, mysterious, powerful
+- F minor: Deep melancholy, cinematic
+- G minor: Baroque, sophisticated, dramatic
+
+Major Keys (Uplifting, Bright, Energetic):
+- C Major: Pure, clear, simple beauty
+- G Major: Bright, cheerful, uplifting
+- D Major: Triumphant, glorious, fanfare-like
+- F Major: Pastoral, peaceful, natural
+- A Major: Warm, rich, romantic
+- Eb Major: Majestic, grand, expansive
+
+Modal Approaches (Sophisticated, Jazzy, Unique):
+- Dorian: Minor with raised 6th (jazzy, sophisticated)
+- Mixolydian: Major with flat 7th (rock, blues feel)
+- Phrygian: Dark, Spanish, exotic
+- Lydian: Dreamy, floating, ethereal
+
+Choose based on the emotional target and genre conventions.
+
+**CHORD PROGRESSION STRATEGY:**
+
+Don't just pick a key - design a progression that tells a story:
+- Classic minor: i - VI - III - VII (melancholic, hip-hop, lofi)
+- Epic progression: vi - IV - I - V (powerful, emotional)
+- Jazz influence: ii - V - I (sophisticated, resolving)
+- Modal approach: Use borrowed chords for color
+- Tension builders: Sus chords, 7ths, 9ths, 11ths
+- Modern production: Consider pedal tones, drones, static harmony
+
+═══════════════════════════════════════════════════════════════════════════════
+                    DETAILED SECTION-BY-SECTION BLUEPRINT
+═══════════════════════════════════════════════════════════════════════════════
+
+You MUST create ${duration <= 45 ? '3-4' : duration <= 90 ? '4-6' : '6-8'} distinct sections that add up to EXACTLY ${duration} seconds.
+
+**STRUCTURE GUIDELINES BY DURATION:**
+
+${duration <= 45 ? `
+**SHORT FORM (${duration}s):**
+Suggested: Intro (20-25%) → Main/Development (50-60%) → Outro (20-25%)
+Focus on immediate impact and concise storytelling.
+` : duration <= 90 ? `
+**MEDIUM FORM (${duration}s):**
+Suggested: Intro (12-15%) → Verse/Build (20-25%) → Chorus/Peak (25-30%) → Bridge/Breakdown (15-20%) → Outro (12-15%)
+Classic song structure with clear emotional arc.
+` : `
+**EXTENDED FORM (${duration}s):**
+Suggested: Intro (10-12%) → Build-up (8-10%) → Drop/Peak A (18-22%) → Breakdown (10-12%) → Build 2 (8-10%) → Peak B (20-24%) → Outro (10-15%)
+Epic journey with multiple peaks and valleys.
+`}
+
+**FOR EACH SECTION, YOU MUST PROVIDE:**
+
+1. **Section Name** (Creative, descriptive - not just "Section 1")
+   Examples: "Ethereal Awakening", "Rhythmic Ascension", "Melodic Catharsis", "Hypnotic Descent"
+
+2. **Exact Duration in Seconds** (Must add up to ${duration}s total)
+
+3. **COMPREHENSIVE Description** (Minimum 80-120 words per section):
+   
+   **What to include in EVERY section description:**
+   
+   a) **Sonic Elements Introduced:**
+      - Which instruments enter/exit?
+      - What frequency ranges are emphasized?
+      - What's the density/complexity level?
+   
+   b) **Production Techniques:**
+      - Filter movements (HP/LP sweeps, resonance)
+      - Reverb approach (size, pre-delay, decay)
+      - Delay types (ping-pong, slapback, tape)
+      - Compression character (parallel, sidechain, glue)
+      - Spatial effects (stereo width, panning)
+      - Modulation (chorus, phaser, flanger)
+      - Saturation/distortion (tape, tube, digital)
+   
+   c) **Melodic/Harmonic Content:**
+      - What's the chord progression?
+      - What melodic motifs are present?
+      - What's the harmonic rhythm?
+      - Any key changes or modal shifts?
+   
+   d) **Rhythmic Characteristics:**
+      - What's the drum pattern complexity?
+      - Straight vs swing feel?
+      - Syncopation level?
+      - Percussion density?
+   
+   e) **Emotional Arc:**
+      - What emotion is this section evoking?
+      - Is tension building or releasing?
+      - What's the energy level (1-10)?
+      - How does it connect to adjacent sections?
+   
+   f) **Mix Philosophy:**
+      - What's foregrounded vs background?
+      - Mono vs stereo elements?
+      - Dry vs wet signal ratio?
+      - Dynamic range approach?
+   
+   g) **Reference Points:**
+      - What does this remind you of? (if applicable)
+      - What production tricks are borrowed from where?
+
+**CRITICAL:** Each section description should be substantial enough that a producer could start working immediately with a clear vision.
+
+═══════════════════════════════════════════════════════════════════════════════
+                      INSTRUMENTATION & SOUND DESIGN
+═══════════════════════════════════════════════════════════════════════════════
+
+You MUST specify **10-15 distinct instruments/sound sources**, each with detailed characteristics:
+
+**FORMAT FOR EACH INSTRUMENT:**
+Not just "piano" but "Vintage Rhodes Mark II electric piano with subtle tremolo and tape saturation"
+Not just "bass" but "Analog Moog sub bass with subtle filter movement and slight distortion for warmth"
+
+**CATEGORIES TO COVER:**
+
+1. **Rhythmic Foundation** (3-4 elements)
+   - Kick drum (character, tuning, processing)
+   - Snare/clap (type, reverb, layering)
+   - Hi-hats (open/closed, pattern complexity)
+   - Percussion (shakers, tambourine, clicks, etc.)
+
+2. **Harmonic/Melodic Elements** (4-6 elements)
+   - Lead sounds (synthesis type, character)
+   - Chord instruments (piano, guitar, pads)
+   - Bass (sub, mid-bass, bass melody)
+   - Arpeggiators or sequence-based elements
+
+3. **Atmospheric/Textural** (3-4 elements)
+   - Pad sounds (reverb, movement, width)
+   - Ambient textures (granular, field recordings)
+   - FX sounds (risers, impacts, sweeps)
+   - Background elements (vinyl crackle, noise, etc.)
+
+4. **Special Elements** (1-2 unique items)
+   - Genre-specific signatures
+   - Experimental sound design
+   - Unique sampling or processing
+
+**PRODUCTION DETAILS TO INCLUDE:**
+- Synthesis type (analog, digital, wavetable, FM, granular)
+- Processing chain (reverb type, compression, saturation)
+- Frequency range emphasis
+- Stereo positioning
+- Dynamic role (constant vs intermittent)
+
+═══════════════════════════════════════════════════════════════════════════════
+                         MOOD & ATMOSPHERE
+═══════════════════════════════════════════════════════════════════════════════
+
+Create a **rich, multi-dimensional mood description** (40-60 words):
+
+**Don't just say:** "dark"
+**Instead say:** "brooding and introspective with undercurrents of hope, like watching a storm roll in at dusk - simultaneously threatening and beautiful, creating space for contemplation while maintaining forward momentum"
+
+**Don't just say:** "energetic"
+**Instead say:** "explosively euphoric with relentless forward drive, capturing the peak moment of collective joy on a dancefloor at 3am when time stops and pure kinetic energy takes over - infectious, uplifting, transcendent"
+
+**Consider these dimensions:**
+- Valence: Positive ←→ Negative
+- Energy: Low ←→ High
+- Density: Sparse ←→ Dense
+- Warmth: Cold ←→ Warm
+- Movement: Static ←→ Dynamic
+- Space: Intimate ←→ Expansive
+- Time: Timeless ←→ Contemporary
+- Texture: Smooth ←→ Rough
+
+═══════════════════════════════════════════════════════════════════════════════
+                          TITLE CREATION
+═══════════════════════════════════════════════════════════════════════════════
+
+Create a **memorable, evocative title** (3-8 words) that:
+- Captures the essence of the track
+- Sounds like it could be real song title
+- Avoids generic phrases like "Beat #1" or "Untitled Track"
+- Has poetic or emotional resonance
+- Fits the genre aesthetic
+
+**Great examples:**
+- Lofi: "Rainy Tuesday Study Session", "Midnight Coffee Contemplation"
+- Techno: "Industrial Prayer", "Steel Cathedral at Dawn"
+- Ambient: "Dissolving Into Everything", "Between Waking and Sleep"
+- House: "3AM Warehouse Memories", "Lost in the Groove"
+
+═══════════════════════════════════════════════════════════════════════════════
+                           OUTPUT FORMAT
+═══════════════════════════════════════════════════════════════════════════════
+
+Return **ONLY** a valid JSON object (no markdown code fences, no explanation text, no preamble):
 
 {
-  "title": "A creative, evocative song title that captures the essence (5-10 words)",
-  "genre": "The primary genre with subgenre if applicable (e.g., 'Atmospheric Lofi Hip-Hop', 'Progressive House', 'Jazz Fusion')",
-  "bpm": <number between 60-180>,
-  "key": "Musical key with scale (e.g., 'A minor', 'F# Dorian', 'Eb Major')",
+  "title": "Your evocative 3-8 word title here",
+  "genre": "Primary genre with subgenre specificity (e.g., 'Dark Progressive Techno', 'Jazz-Influenced Lofi Hip-Hop', 'Cinematic Ambient Electronica')",
+  "bpm": <integer between 60-180>,
+  "key": "Musical key with scale/mode (e.g., 'A minor', 'F# Dorian', 'Eb Lydian', 'C Major')",
   "structure": [
     {
-      "section": "Section name",
-      "duration": <number of seconds>,
-      "description": "DETAILED 3-5 sentence description of this section including musical elements, production techniques, emotional arc, and how it connects to the overall composition"
+      "section": "Descriptive section name (not generic)",
+      "duration": <exact seconds>,
+      "description": "COMPREHENSIVE 80-120+ word description covering: sonic elements, production techniques, melodic/harmonic content, rhythmic characteristics, emotional arc, mix philosophy, and how it connects to adjacent sections. Include specific details about filters, reverb, compression, instrumentation changes, chord progressions, and the narrative journey."
     }
   ],
-  "instruments": ["List 8-12 specific instruments or sound design elements that will be used, being genre-specific and detailed (e.g., 'Rhodes electric piano', 'analog sub bass', 'vinyl crackle texture', '808 kick drum')"],
-  "mood": "A rich, multi-word description of the emotional atmosphere (e.g., 'melancholic yet hopeful', 'energetic and euphoric', 'dark and introspective')"
+  "instruments": [
+    "Detailed instrument 1 with synthesis type and processing (e.g., 'Vintage Fender Rhodes with tape saturation and stereo chorus')",
+    "Detailed instrument 2 with character description",
+    "...continue for 10-15 total instruments, covering rhythm, harmony, melody, atmosphere, and special elements"
+  ],
+  "mood": "Rich 40-60 word multi-dimensional atmospheric description that paints a vivid emotional and sensory picture, going far beyond simple adjectives to capture the complete feeling and psychology of the listening experience"
 }
 
-**CRITICAL REQUIREMENTS:**
-- Structure sections MUST add up to exactly ${duration} seconds
-- Each section description MUST be at least 2 full sentences (minimum 30 words)
-- Instrument list MUST have at least 8 items
-- Title MUST be creative and evocative, not generic
-- Mood MUST be nuanced with multiple descriptors
-- Think like a professional producer creating a detailed session plan
+═══════════════════════════════════════════════════════════════════════════════
+                        CRITICAL QUALITY STANDARDS
+═══════════════════════════════════════════════════════════════════════════════
 
-BE CREATIVE, DETAILED, AND PROFESSIONAL. This plan will be used to generate actual music, so make it comprehensive and inspiring!`;
+**MANDATORY REQUIREMENTS - YOUR RESPONSE WILL BE REJECTED IF:**
+- ❌ Structure sections don't add up to exactly ${duration} seconds
+- ❌ Any section description is less than 80 words
+- ❌ Fewer than 10 instruments specified
+- ❌ Instruments lack specific details (just "piano" not acceptable)
+- ❌ Title is generic or uninspired
+- ❌ Mood description is less than 40 words
+- ❌ Genre lacks subgenre specificity
+- ❌ Section descriptions don't mention production techniques
+- ❌ No mention of emotional arc or narrative flow
+- ❌ JSON is malformed or includes markdown formatting
+
+**EXCELLENCE INDICATORS - STRIVE FOR:**
+- ✅ Section descriptions 100-150+ words each
+- ✅ 12-15 highly specific instruments
+- ✅ Production terminology that shows expertise
+- ✅ Clear narrative arc across sections
+- ✅ Genre-authentic details
+- ✅ Creative, memorable title
+- ✅ Mood description that's literary in quality
+- ✅ Unique insights that surprise and inspire
+
+═══════════════════════════════════════════════════════════════════════════════
+                           FINAL DIRECTIVE
+═══════════════════════════════════════════════════════════════════════════════
+
+You're not just filling out a form - you're creating a COMPREHENSIVE PRODUCTION BLUEPRINT that will guide the actual creation of music. A producer should be able to take your plan and start working immediately with absolute clarity about what to create.
+
+Think of this as the detailed creative brief you'd receive for a high-budget production. Every word should add value. Every detail should inform decisions. This is professional-grade work.
+
+Your experience, expertise, and creative vision should shine through every section.
+
+Now create something extraordinary.`;
+
 
     try {
       const result = await model.generateContent(promptText);
