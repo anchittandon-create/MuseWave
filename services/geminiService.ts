@@ -141,24 +141,57 @@ const callAiEndpoint = async <T,>(
 };
 
 const buildEnhancedPromptFallback = (context: any): { prompt: string } => {
-  if (context?.prompt && typeof context.prompt === 'string' && context.prompt.trim()) {
-    const genreNote = context?.genres?.length ? `Keep it rooted in ${context.genres.join(', ')}.` : 'Blend cinematic electronica with modern club sensibilities.';
-    const structure = `Open with a sparse intro, rise into layered verses, unleash a towering chorus, then land in an emotive outro.`;
-    const instrumentation = `Feature evolving analog pads, punchy drum machines, granular vocal chops, and a bassline that ducks with sidechain compression.`;
-    const production = `Use lush stereo delays, shimmer reverbs, subtle tape saturation, and automate filters to create tension/release.`;
-    return {
-      prompt: `${context.prompt.trim()}\n${genreNote}\n${structure}\n${instrumentation}\n${production}`,
-    };
-  }
-  const genre = (context?.genres?.[0] as string | undefined)?.toLowerCase() || 'electronic';
-  const template = pickRandom(ENHANCED_PROMPT_TEMPLATES);
-  const detailLines = [
-    `Structure the journey as: atmospheric intro → groove-focused verse → explosive chorus → breakdown → euphoric finale.`,
-    `Instrumentation: layered polysynth chords, expressive monosynth lead, textured percussion loops, and tactile Foley one-shots.`,
-    `Production directives: sidechain the pads to the kick, automate low-pass filters for build-ups, and sprinkle reversed vocal swells.`,
-    `Mood words: neon-drenched, widescreen, kinetic, introspective.`,
-  ];
-  return { prompt: `${template.replace('{genre}', genre)}\n${detailLines.join('\n')}` };
+  const primaryGenre = context?.genres?.[0] || 'electronic';
+  const template = pickRandom(ENHANCED_PROMPT_TEMPLATES).replace('{genre}', primaryGenre.toLowerCase());
+
+  const sectionGuide = [
+    'Intro (0:00–0:32) – start with filtered drones and distant foley textures, gradually revealing the pulse via low-passed hats.',
+    'Section A (0:32–1:32) – introduce the core bass arp and a syncopated clap, layering call-and-response chords.',
+    'Section B (1:32–2:32) – lift all filters, add soaring lead hooks and stacked harmonies, emphasize wide stereo delays.',
+    'Breakdown (2:32–3:00) – strip back to vocals/pads, automate granular FX, tease the drop with rising noise swells.',
+    'Finale (3:00+) – bring everything back with extra percussion fills, uplifting countermelodies, and saturated master bus.'
+  ].join('\n');
+
+  const instrumentationDetail = [
+    'Instrumentation:',
+    '- Kick: warm but punchy, 4-on-the-floor with subtle ghost hits.',
+    '- Bass: sidechained saw stack doubling a sub sine for weight.',
+    '- Harmonic bed: evolving polysynth pads blended with strings and guitar harmonics.',
+    '- Lead motif: expressive mono synth performing root-third-fifth arpeggios with portamento.',
+    '- Percussion: metallic hats, shuffled shakers, cinematic tom rolls, reversed impacts.',
+    '- Vocals (if any): breathy whispers processed through granular delays and octave harmonizers.'
+  ].join('\n');
+
+  const productionDetail = [
+    'Production directives:',
+    '- Use automation to morph filter cutoff, resonance, and stereo width every eight bars.',
+    '- Apply shimmer reverb on pads, while keeping drums tight with transient shaping.',
+    '- Add found-sound snippets (rain, subway announcements) tucked under transitions for storytelling.',
+    '- Master to -14 LUFS with gentle glue compression and soft clipping for energy.'
+  ].join('\n');
+
+  const descriptivePrompt = context?.prompt?.trim()
+    ? `Creative Intent:\n${context.prompt.trim()}`
+    : `Creative Intent:\n${template}`;
+
+  const genreNote = context?.genres?.length
+    ? `Genre Anchors: ${context.genres.join(', ')}.`
+    : 'Genre Anchors: blend modern melodic techno with cinematic electronica.';
+
+  const inspirationNote = context?.artistInspiration?.length
+    ? `Artist Touchstones: ${context.artistInspiration.join(', ')}.`
+    : 'Artist Touchstones: reference acts like Rival Consoles, Jon Hopkins, Kiasmos.';
+
+  return {
+    prompt: [
+      descriptivePrompt,
+      genreNote,
+      inspirationNote,
+      '\nArrangement Map:\n' + sectionGuide,
+      '\n' + instrumentationDetail,
+      '\n' + productionDetail
+    ].join('\n\n')
+  };
 };
 
 const buildGenreFallback = (context: any): { genres: string[] } => {
