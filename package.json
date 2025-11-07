@@ -20,7 +20,7 @@
     "@neondatabase/serverless": "^1.0.2",
     "@vercel/blob": "^2.0.0",
     "@vercel/node": "^5.5.3",
-    "@fastify/cors": "^8.5.1",
+    "@fastify/cors": "^8.4.2",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "better-sqlite3": "^9.4.0",
     "clsx": "2.1.1",
