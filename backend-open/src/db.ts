@@ -1,33 +1,35 @@
-import Database from 'better-sqlite3';
 import { join, dirname } from 'path';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 
-let db: Database.Database | null = null;
+const dataDir = join(process.cwd(), 'backend-open', 'data');
+const jsonPath = join(dataDir, 'generations.json');
 
-function init(): Database.Database {
-  const file = join(process.cwd(), 'backend-open', 'data', 'generations.db');
-  if (!existsSync(dirname(file))) mkdirSync(dirname(file), { recursive: true });
-  const instance = new Database(file);
-  instance
-    .prepare(
-      `CREATE TABLE IF NOT EXISTS generations (
-        id TEXT PRIMARY KEY,
-        payload TEXT,
-        bpm INT,
-        song_key TEXT,
-        mix_url TEXT,
-        instrumental_url TEXT,
-        vocals_url TEXT,
-        video_url TEXT,
-        engines TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`
-    )
-    .run();
-  return instance;
+type GenerationRecord = {
+  id: string;
+  payload: Record<string, unknown>;
+  bpm: number;
+  song_key: string;
+  mix_url: string;
+  instrumental_url: string;
+  vocals_url?: string | null;
+  video_url?: string | null;
+  engines: Record<string, unknown>;
+  created_at: string;
+};
+
+function loadAll(): GenerationRecord[] {
+  if (!existsSync(jsonPath)) return [];
+  try {
+    const raw = readFileSync(jsonPath, 'utf8');
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
 }
 
-export function getDb(): Database.Database {
-  if (!db) db = init();
-  return db;
+export function recordGeneration(record: GenerationRecord): void {
+  if (!existsSync(dataDir)) mkdirSync(dataDir, { recursive: true });
+  const entries = loadAll();
+  entries.push(record);
+  writeFileSync(jsonPath, JSON.stringify(entries, null, 2));
 }

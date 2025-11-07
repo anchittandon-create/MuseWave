@@ -7,7 +7,7 @@ import { buildInstrumental, mixStems, renderVideo, synthesizeVocals } from '../e
 import { runCoqui, runMagenta, runRiffusion } from '../engines/python.js';
 import { mkAssetDir } from '../utils/files.js';
 import { copyFile } from 'fs/promises';
-import { getDb } from '../db.js';
+import { recordGeneration } from '../db.js';
 
 const BodySchema = z.object({
   musicPrompt: z.string(),
@@ -124,22 +124,18 @@ export function registerGenerateRoute(app: FastifyInstance) {
       debug
     };
 
-    getDb()
-      .prepare(
-        `INSERT INTO generations (id, payload, bpm, song_key, mix_url, instrumental_url, vocals_url, video_url, engines)
-         VALUES (@id, @payload, @bpm, @song_key, @mix_url, @instrumental_url, @vocals_url, @video_url, @engines)`
-      )
-      .run({
-        id: response.id,
-        payload: JSON.stringify(body),
-        bpm: response.bpm,
-        song_key: response.key,
-        mix_url: response.assets.mixUrl,
-        instrumental_url: response.assets.instrumentalUrl,
-        vocals_url: vocalsUrl || null,
-        video_url: videoUrl || null,
-        engines: JSON.stringify(response.engine)
-      });
+    recordGeneration({
+      id: response.id,
+      payload: body,
+      bpm: response.bpm,
+      song_key: response.key,
+      mix_url: response.assets.mixUrl,
+      instrumental_url: response.assets.instrumentalUrl,
+      vocals_url: vocalsUrl || null,
+      video_url: videoUrl || null,
+      engines: response.engine,
+      created_at: new Date().toISOString()
+    });
 
     return reply.send(response);
   });

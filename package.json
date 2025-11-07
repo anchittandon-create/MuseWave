@@ -22,7 +22,7 @@
     "@vercel/node": "^5.5.3",
     "@fastify/cors": "^8.4.2",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
-    "better-sqlite3": "^9.4.0",
+    "sql.js": "^1.11.0",
     "clsx": "2.1.1",
     "dotenv": "^17.2.3",
     "fastify": "^4.28.1",
