@@ -17,7 +17,7 @@ export declare const planRequestSchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     durationSec?: number | undefined;
     prompt?: string | undefined;
-    genre?: "pop" | "lofi" | "edm" | "rock" | undefined;
+    genre?: "pop" | "lofi" | "rock" | "edm" | undefined;
     bpm?: number | undefined;
     structure?: {
         section: "intro" | "verse" | "chorus" | "bridge" | "outro";
@@ -26,7 +26,7 @@ export declare const planRequestSchema: z.ZodObject<{
 }, {
     durationSec?: number | undefined;
     prompt?: string | undefined;
-    genre?: "pop" | "lofi" | "edm" | "rock" | undefined;
+    genre?: "pop" | "lofi" | "rock" | "edm" | undefined;
     bpm?: number | undefined;
     structure?: {
         section: "intro" | "verse" | "chorus" | "bridge" | "outro";
