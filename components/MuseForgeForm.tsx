@@ -245,25 +245,6 @@ const MuseForgeForm = ({
         </div>
       </div>
 
-      {/* Artist Inspiration */}
-      <div className="space-y-2">
-         <div className="flex items-center justify-between">
-            <label htmlFor="artists" className="block text-sm font-medium text-gray-300">
-                Artist Inspiration (Optional)
-            </label>
-            <SuggestionButton field="artists" />
-        </div>
-        <p className="text-sm text-gray-500">
-          Guide the AI with artists whose style you admire.
-        </p>
-        <TagInput
-          value={formState.artists}
-          onChange={(v) => handleFieldChange('artists', v)}
-          placeholder={formState.artists.length > 0 ? "" : "e.g., Brian Eno, Aphex Twin"}
-          disabled={isLoading}
-        />
-      </div>
-
       {/* Preferred Languages */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
@@ -280,6 +261,25 @@ const MuseForgeForm = ({
           onChange={(v) => handleFieldChange('languages', v)}
           placeholder={formState.languages.length > 0 ? "" : "e.g., English, Hindi"}
           options={languageOptions}
+          disabled={isLoading}
+        />
+      </div>
+
+      {/* Artist Inspiration */}
+      <div className="space-y-2">
+         <div className="flex items-center justify-between">
+            <label htmlFor="artists" className="block text-sm font-medium text-gray-300">
+                Artist Inspiration (Optional)
+            </label>
+            <SuggestionButton field="artists" />
+        </div>
+        <p className="text-sm text-gray-500">
+          Guide the AI with artists whose style you admire. The AI will consider your selected genres and languages when suggesting artists.
+        </p>
+        <TagInput
+          value={formState.artists}
+          onChange={(v) => handleFieldChange('artists', v)}
+          placeholder={formState.artists.length > 0 ? "" : "e.g., Brian Eno, Aphex Twin"}
           disabled={isLoading}
         />
       </div>

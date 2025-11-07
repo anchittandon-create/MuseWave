@@ -4,6 +4,7 @@ interface SuggestArtistsRequest {
   context: {
     prompt?: string;
     genres?: string[];
+    languages?: string[];
     mood?: string;
     existingArtists?: string[];
   };
@@ -41,6 +42,7 @@ export default async function handler(
       context = {
         prompt: body.prompt,
         genres: body.genres,
+        languages: body.languages,
         mood: body.mood,
         existingArtists: body.existingArtists
       };
@@ -79,12 +81,14 @@ async function suggestWithGemini(context: any): Promise<string[]> {
 
 Prompt: "${context.prompt || 'Create a track'}"
 Genres: ${context.genres?.join(', ') || 'Electronic'}
+Languages: ${context.languages?.join(', ') || 'Not specified'}
 Mood: ${context.mood || 'Not specified'}
 Current artists: ${context.existingArtists?.join(', ') || 'None'}
 
 Suggest artists that would inspire the creation of similar music. Focus on:
 - Contemporary electronic producers
 - Artists known for the specified genres
+- Artists who work with the specified languages/regions (if languages are specified)
 - Innovative sound designers
 - Both established and emerging artists
 - Avoid duplicating existing artists
@@ -105,16 +109,36 @@ Return only a JSON array of artist names, like: ["Skrillex", "Porter Robinson", 
 
 function suggestArtistsFallback(context: any): string[] {
   const allArtists = [
+    // Electronic/EDM
     'Skrillex', 'Porter Robinson', 'Madeon', 'Flume', 'ODESZA', 'Disclosure',
+    // Experimental/IDM
     'Burial', 'Four Tet', 'Aphex Twin', 'Boards of Canada', 'Autechre',
+    // Progressive/Trance
     'Deadmau5', 'Eric Prydz', 'Above & Beyond', 'Armin van Buuren',
+    // Mainstream EDM
     'Calvin Harris', 'David Guetta', 'Martin Garrix', 'Tiësto',
+    // Bass/Trap
     'Diplo', 'Major Lazer', 'RL Grime', 'Baauer', 'What So Not',
+    // Downtempo/Ambient
     'Bonobo', 'Emancipator', 'Tycho', 'Kiasmos', 'Nils Frahm',
+    // Electronica/Indie
     'Jon Hopkins', 'Max Richter', 'Ólafur Arnalds', 'Rival Consoles',
+    // Contemporary Dance
     'Fred again..', 'Anyma', 'Bicep', 'Peggy Gou', 'Charlotte de Witte',
+    // Techno/Melodic
     'Amelie Lens', 'Tale of Us', 'Stephan Bodzin', 'Boris Brejcha',
-    'Fisher', 'Chris Lake', 'Walker & Royce', 'Claude VonStroke'
+    // House
+    'Fisher', 'Chris Lake', 'Walker & Royce', 'Claude VonStroke',
+    // Indian Electronic
+    'Nucleya', 'Ritviz', 'KSHMR', 'Lost Stories', 'Dualist Inquiry',
+    // Latin Electronic
+    'Alok', 'Vintage Culture', 'Meduza', 'Topic', 'J Balvin',
+    // Asian Electronic
+    'Zedd', 'DJ Snake', 'Steve Aoki', 'Alan Walker', 'Marshmello',
+    // K-Pop Producers
+    'Teddy Park', 'Black Eyed Pilseung', 'Ryan S. Jhun',
+    // Japanese Electronic
+    'Cornelius', 'Ken Ishii', 'Susumu Yokota', 'Rei Harakami'
   ];
   
   const existing = context.existingArtists || [];
@@ -122,13 +146,31 @@ function suggestArtistsFallback(context: any): string[] {
   
   // Genre-based scoring
   const genres = (context.genres || []).map((g: string) => g.toLowerCase());
+  const languages = (context.languages || []).map((l: string) => l.toLowerCase());
   const artistScores: Record<string, number> = {};
   
   available.forEach(artist => {
     let score = 0;
     const artistLower = artist.toLowerCase();
     
-    // Score based on genre preferences
+    // Language/regional scoring (high priority since languages are now selected before artists)
+    if (languages.includes('hindi') || languages.includes('punjabi')) {
+      if (['nucleya', 'ritviz', 'kshmr', 'lost stories', 'dualist inquiry'].some(a => artistLower.includes(a))) score += 3;
+    }
+    if (languages.includes('spanish') || languages.includes('portuguese')) {
+      if (['alok', 'vintage culture', 'meduza', 'j balvin'].some(a => artistLower.includes(a))) score += 3;
+    }
+    if (languages.includes('korean')) {
+      if (['teddy park', 'black eyed pilseung', 'ryan s. jhun', 'zedd'].some(a => artistLower.includes(a))) score += 3;
+    }
+    if (languages.includes('japanese')) {
+      if (['cornelius', 'ken ishii', 'susumu yokota', 'rei harakami'].some(a => artistLower.includes(a))) score += 3;
+    }
+    if (languages.includes('french')) {
+      if (['david guetta', 'dj snake', 'madeon'].some(a => artistLower.includes(a))) score += 2;
+    }
+    
+    // Genre-based scoring
     if (genres.some((g: string) => ['house', 'techno', 'electronic'].includes(g))) {
       if (['deadmau5', 'eric prydz', 'calvin harris', 'disclosure'].some(a => artistLower.includes(a))) score += 2;
     }
@@ -152,6 +194,9 @@ function suggestArtistsFallback(context: any): string[] {
     }
     if (prompt.includes('dance') || prompt.includes('club')) {
       if (['fisher', 'chris lake', 'peggy gou', 'disclosure'].some(a => artistLower.includes(a))) score += 1;
+    }
+    if (prompt.includes('bollywood') || prompt.includes('indian')) {
+      if (['nucleya', 'ritviz', 'kshmr'].some(a => artistLower.includes(a))) score += 2;
     }
     
     // Add random factor for diversity
