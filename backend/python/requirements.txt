@@ -1,0 +1,28 @@
+# Open-Source AI Music Generation - Python Dependencies
+# All packages are free and open-source (MIT, Apache 2.0, MPL, etc.)
+
+# Audio Processing
+numpy>=1.21.0
+soundfile>=0.11.0
+scipy>=1.7.0
+
+# MIDI Generation & Composition
+magenta>=2.1.4
+note-seq>=0.0.5
+midiutil>=1.2.1
+
+# Text-to-Speech (Vocals)
+TTS>=0.22.0
+
+# Audio Diffusion (Music Generation)
+# riffusion  # Uncomment if available (requires torch + diffusers)
+# diffusers>=0.21.0
+# torch>=2.0.0
+# transformers>=4.30.0
+
+# Optional: OpenVoice for better voice synthesis
+# openvoice  # Uncomment if needed
+
+# Utility
+Pillow>=9.0.0
+librosa>=0.10.0
