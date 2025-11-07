@@ -245,7 +245,7 @@ const MuseForgeForm = ({
         </div>
       </div>
 
-       {/* Artist Inspiration */}
+      {/* Artist Inspiration */}
       <div className="space-y-2">
          <div className="flex items-center justify-between">
             <label htmlFor="artists" className="block text-sm font-medium text-gray-300">
@@ -260,6 +260,26 @@ const MuseForgeForm = ({
           value={formState.artists}
           onChange={(v) => handleFieldChange('artists', v)}
           placeholder={formState.artists.length > 0 ? "" : "e.g., Brian Eno, Aphex Twin"}
+          disabled={isLoading}
+        />
+      </div>
+
+      {/* Preferred Languages */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label htmlFor="languages" className="block text-sm font-medium text-gray-300">
+            Preferred Vocal Languages
+          </label>
+          <SuggestionButton field="languages" />
+        </div>
+        <p className="text-sm text-gray-500">
+          Specify or let the AI suggest languages that complement the vibe and audience.
+        </p>
+        <TagInput
+          value={formState.languages}
+          onChange={(v) => handleFieldChange('languages', v)}
+          placeholder={formState.languages.length > 0 ? "" : "e.g., English, Hindi"}
+          options={languageOptions}
           disabled={isLoading}
         />
       </div>
@@ -283,26 +303,6 @@ const MuseForgeForm = ({
           disabled={isLoading}
           className="w-full p-2 bg-gray-800 border border-gray-700 rounded-md shadow-sm focus:ring-2 focus:ring-primary focus:border-primary disabled:opacity-50"
           placeholder={formState.lyrics ? "" : "Verse 1:\nFloating through a calm, digital ocean\nChorus:\nUnder a sky of binary stars..."}
-        />
-      </div>
-
-      {/* Preferred Languages */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <label htmlFor="languages" className="block text-sm font-medium text-gray-300">
-            Preferred Vocal Languages
-          </label>
-          <SuggestionButton field="languages" />
-        </div>
-        <p className="text-sm text-gray-500">
-          Specify or let the AI suggest languages that complement the vibe and audience.
-        </p>
-        <TagInput
-          value={formState.languages}
-          onChange={(v) => handleFieldChange('languages', v)}
-          placeholder={formState.languages.length > 0 ? "" : "e.g., English, Hindi"}
-          options={languageOptions}
-          disabled={isLoading}
         />
       </div>
       
