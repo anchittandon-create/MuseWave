@@ -88,3 +88,34 @@ export interface QueueJob {
   backoffMs: number;
   createdAt: Date;
 }
+
+// Production Queue Types
+export interface GenerationJobData {
+  musicPrompt: string;
+  genres: string[];
+  durationSec: number;
+  lyrics?: string;
+  language?: string;
+  videoStyle?: 'waveform' | 'spectrum' | 'particles';
+  userId?: string;
+}
+
+export interface GenerationJobResult {
+  success: boolean;
+  jobId: string;
+  error?: string;
+  assets: {
+    planUrl?: string;
+    audioUrl?: string;
+    vocalsUrl?: string;
+    mixUrl?: string;
+    videoUrl?: string;
+    lyricsUrl?: string;
+  };
+  metadata?: {
+    durationMs?: number;
+    cached?: boolean;
+    source?: 'opensource' | 'gemini';
+    [key: string]: any;
+  };
+}
