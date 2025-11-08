@@ -1,0 +1,21 @@
+# Ignore serverless functions to stay within Hobby plan limits
+api/
+backend/
+backend-complete/
+backend-neo/
+backend-open/
+
+# Ignore development files
+node_modules/
+.env.local
+*.log
+.DS_Store
+
+# Ignore Python files
+**/*.pyc
+**/__pycache__/
+**/venv/
+
+# Ignore large files
+public/assets/
+test*.wav
