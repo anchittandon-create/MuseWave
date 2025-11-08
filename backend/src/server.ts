@@ -8,7 +8,7 @@ import { securityPlugin } from './plugins/security.js';
 import { apiKeyAuth } from './auth/apiKey.js';
 import { rateLimitPlugin } from './auth/rateLimit.js';
 import { healthRoute } from './routes/health.js';
-import { metricsRoute } from './routes/metrics.js';
+// import { metricsRoute } from './routes/metrics.js'; // Metrics already in health.ts
 import { generateRoute } from './routes/generate.js';
 import { jobsRoute } from './routes/jobs.js';
 import { assetsRoute } from './routes/assets';
@@ -53,7 +53,7 @@ export async function createServer() {
 
   // Routes
   await app.register(healthRoute);
-  await app.register(metricsRoute);
+  // await app.register(metricsRoute); // Duplicate - already in health.ts
   await app.register(generateRoute);
   await app.register(jobsRoute);
   await app.register(assetsRoute);

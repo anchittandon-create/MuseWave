@@ -15,12 +15,17 @@ const generateSchema = z.object({
 });
 
 export const generateRoute: FastifyPluginAsync = async (app) => {
-  app.post('/generate', {
-    schema: {
-      body: generateSchema,
-    },
-  }, async (request, reply) => {
-    const body = request.body as z.infer<typeof generateSchema>;
+  app.post('/generate', async (request, reply) => {
+    // Validate with Zod
+    const parseResult = generateSchema.safeParse(request.body);
+    if (!parseResult.success) {
+      return reply.code(400).send({ 
+        error: 'Validation failed', 
+        details: parseResult.error.errors 
+      });
+    }
+    
+    const body = parseResult.data;
 
     // Safety check
     const safety = await safetyService.checkContent(body.musicPrompt);

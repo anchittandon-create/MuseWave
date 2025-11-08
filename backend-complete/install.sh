@@ -43,8 +43,7 @@ pip install --upgrade pip setuptools wheel
 # 3. Install AI models
 echo ""
 echo "🤖 Step 3/5: Installing AI models (this may take a few minutes)..."
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
-pip install riffusion magenta TTS soundfile librosa
+pip install -r requirements.txt --index-url https://download.pytorch.org/whl/cpu
 
 # 4. Node dependencies
 echo ""

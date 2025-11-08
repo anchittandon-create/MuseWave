@@ -40,7 +40,7 @@ export async function startGeneration(payload: Record<string, unknown>) {
   }
 
   // PRODUCTION MODE: Call real backend-neo API
-  const backendUrl = process.env.BACKEND_NEO_URL || 'http://localhost:3001';
+  const backendUrl = process.env.BACKEND_NEO_URL || 'http://localhost:3002';
   
   try {
     const response = await fetch(`${backendUrl}/api/generate/pipeline`, {
@@ -166,7 +166,7 @@ export function subscribeToJob(
     }
     
     // Real backend polling - check backend-neo first
-    const backendUrl = process.env.BACKEND_NEO_URL || 'http://localhost:3001';
+    const backendUrl = process.env.BACKEND_NEO_URL || 'http://localhost:3002';
     
     try {
       // Try backend-neo jobs endpoint first
@@ -309,7 +309,7 @@ export async function fetchJobResult(jobId: string): Promise<OrchestratorResult>
     };
   }
 
-  const backendUrl = process.env.BACKEND_NEO_URL || 'http://localhost:3001';
+  const backendUrl = process.env.BACKEND_NEO_URL || 'http://localhost:3002';
 
   try {
     // Try backend-neo jobs endpoint first

@@ -12,8 +12,8 @@ export async function initDatabase(): Promise<void> {
   const SQL = await initSqlJs();
 
   // Load existing DB or create new
-  if (existsSync(env.DB_PATH)) {
-    const buffer = await readFile(env.DB_PATH);
+  if (existsSync(env.DATABASE_PATH)) {
+    const buffer = await readFile(env.DATABASE_PATH);
     db = new SQL.Database(buffer);
   } else {
     db = new SQL.Database();
@@ -59,7 +59,7 @@ async function saveDatabase(): Promise<void> {
 
   const data = db.export();
   const buffer = Buffer.from(data);
-  await writeFile(env.DB_PATH, buffer);
+  await writeFile(env.DATABASE_PATH, buffer);
 }
 
 export interface Generation {

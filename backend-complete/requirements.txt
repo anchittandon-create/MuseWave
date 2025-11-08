@@ -1,0 +1,14 @@
+# Core AI/ML Dependencies for Autosuggestion
+torch>=2.0.0
+sentence-transformers>=2.2.0
+transformers>=4.30.0
+
+# Optional: Full music generation stack (requires Python 3.9-3.11)
+# Uncomment these if you downgrade to Python 3.11:
+# torchvision
+# torchaudio
+# riffusion
+# magenta
+# TTS
+# soundfile
+# librosa

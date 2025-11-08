@@ -7,6 +7,7 @@
 - ✅ **Real Audio Generation**: Riffusion (text-to-music diffusion) + Magenta (MelodyRNN) + DSP fallbacks
 - ✅ **Vocal Synthesis**: Coqui TTS (multi-speaker VITS) + formant-based DSP fallback
 - ✅ **Video Generation**: 8 visual styles via FFmpeg (spectrum, waveform, lyric overlay, etc.)
+- ✅ **AI-Powered Autosuggestion**: Context-aware real-time suggestions using ML (sentence-transformers)
 - ✅ **Adaptive AI Suggestions**: Context-aware, non-repetitive suggestions for all input fields
 - ✅ **Dashboard**: Analytics + playback + download for all generations
 - ✅ **Multi-Format Support**: `.wav`, `.mp3`, `.mp4`, `.webm`, `.ogg`, `.flac`, `.mov`
@@ -39,9 +40,11 @@ backend-complete/
 │   ├── routes/
 │   │   ├── generate.ts             # Main generation pipeline
 │   │   ├── suggestions.ts          # AI suggestion API
+│   │   ├── autosuggest.ts          # ML-powered autosuggestion API (NEW)
 │   │   ├── dashboard.ts            # Analytics API
 │   │   └── assets.ts               # Static file serving
 │   ├── python/
+│   │   ├── suggestion_engine.py    # ML autosuggestion (sentence-transformers) (NEW)
 │   │   ├── riffusion_generate.py   # Riffusion CLI wrapper
 │   │   ├── magenta_melody.py       # Magenta MelodyRNN wrapper
 │   │   └── coqui_tts.py            # Coqui TTS wrapper
@@ -452,7 +455,48 @@ RIFFUSION_ENABLED=false
 
 ---
 
-## 📊 Performance
+## � AI-Powered Autosuggestion (NEW)
+
+**Real-time ML-powered suggestions** for genres, languages, and artists. See **[AUTOSUGGESTION.md](./AUTOSUGGESTION.md)** for full documentation.
+
+### Quick Start
+
+```bash
+# Already installed if you ran install.sh
+pip install sentence-transformers
+
+# Test autosuggestion
+node scripts/test-autosuggestion.js
+```
+
+### Features
+- ✨ **Zero Hardcoded Lists** - All AI-generated using sentence-transformers
+- 🎯 **Context-Aware** - Considers prompt, genres, artists, languages
+- ⚡ **Real-Time** - 300ms debounce, <600ms response
+- 🎹 **Keyboard Navigation** - Arrow keys, Enter, Escape
+- 🌍 **Regional Intelligence** - Disables artists for Hindi/regional languages
+
+### API
+```bash
+curl -X POST http://localhost:4001/api/suggest \
+  -H "Content-Type: application/json" \
+  -d '{
+    "field": "genres",
+    "input": "electronic",
+    "context": {
+      "musicPrompt": "upbeat dance music",
+      "genres": [],
+      "artistInspiration": [],
+      "vocalLanguages": []
+    }
+  }'
+```
+
+**Note**: First run downloads ML model (~80MB, 2-5 minutes). Fallback to prefix matching until ready.
+
+---
+
+## �📊 Performance
 
 ### Typical Generation Times (M1 Mac)
 - **Audio (30s)**: 15-30 seconds (Riffusion) / 1s (DSP)

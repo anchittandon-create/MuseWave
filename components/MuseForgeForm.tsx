@@ -306,7 +306,6 @@ const MuseForgeForm = ({
           )}
         </p>
       </div>
-      </div>
 
       {/* Lyrics / Vocal Theme */}
       <div className="space-y-2">
