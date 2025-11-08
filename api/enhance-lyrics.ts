@@ -6,6 +6,7 @@ interface EnhanceLyricsRequest {
     genre?: string;
     mood?: string;
     language?: string;
+    languages?: string[];
     existingLyrics?: string;
   };
 }
@@ -61,21 +62,26 @@ async function enhanceWithGemini(context: any): Promise<string> {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY!);
   const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
+  // Determine target language from languages array or single language field
+  const targetLanguage = Array.isArray(context.languages) && context.languages.length > 0 
+    ? context.languages[0] 
+    : context.language || 'English';
+
   const prompt = `${context.existingLyrics ? 'Enhance and improve these lyrics' : 'Create song lyrics'} for this music context:
 
 ${context.existingLyrics ? `EXISTING LYRICS:\n${context.existingLyrics}\n\n` : ''}MUSIC CONTEXT:
 Prompt: "${context.prompt || 'Create a song'}"
 Genre: ${context.genre || 'Electronic'}
 Mood: ${context.mood || 'Not specified'}
-Language: ${context.language || 'English'}
+**IMPORTANT: Generate lyrics in ${targetLanguage} language**
 
 ${context.existingLyrics ? 
-  'Improve the existing lyrics by:\n- Enhancing rhythm and flow\n- Strengthening emotional impact\n- Improving rhyme schemes\n- Adding more vivid imagery\n- Maintaining the original theme and message' :
-  'Create original lyrics that:\n- Match the musical genre and mood\n- Have strong rhythm and flow\n- Include memorable hooks and choruses\n- Tell a compelling story or convey emotion\n- Use appropriate language and style'
+  'Improve the existing lyrics by:\n- Enhancing rhythm and flow\n- Strengthening emotional impact\n- Improving rhyme schemes\n- Adding more vivid imagery\n- Maintaining the original theme and message\n- Keeping the same language: ' + targetLanguage :
+  'Create original lyrics that:\n- Match the musical genre and mood\n- Have strong rhythm and flow\n- Include memorable hooks and choruses\n- Tell a compelling story or convey emotion\n- Use appropriate language and style\n- **MUST be written entirely in ' + targetLanguage + ' language**'
 }
 
 Structure: Verse - Chorus - Verse - Chorus - Bridge - Chorus
-Return only the lyrics text, properly formatted with sections labeled.`;
+Return only the lyrics text in ${targetLanguage}, properly formatted with sections labeled.`;
 
   const result = await model.generateContent(prompt);
   return result.response.text().trim();
@@ -85,6 +91,11 @@ function enhanceLyricsFallback(context: any): string {
   const genre = (context.genre || 'Electronic').toLowerCase();
   const mood = (context.mood || '').toLowerCase();
   const prompt = context.prompt || 'Create a song';
+  
+  // Determine target language
+  const targetLanguage = Array.isArray(context.languages) && context.languages.length > 0 
+    ? context.languages[0] 
+    : context.language || 'English';
   
   // If we have existing lyrics, enhance them minimally
   if (context.existingLyrics) {
@@ -101,7 +112,7 @@ function enhanceLyricsFallback(context: any): string {
       }
       return line;
     });
-    return enhanced.join('\n');
+    return enhanced.join('\n') + `\n\n[Note: Lyrics should be translated to ${targetLanguage}]`;
   }
   
   // Generate new lyrics based on genre and mood
@@ -133,6 +144,10 @@ function enhanceLyricsFallback(context: any): string {
   }
   
   const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+  
+  const languageNote = targetLanguage.toLowerCase() !== 'english' 
+    ? `\n\n[Note: These lyrics are generated in English. For ${targetLanguage} lyrics, please use the Gemini AI enhancement by providing an API key, or manually translate these lyrics.]`
+    : '';
   
   return `Verse 1:
 In the ${adj} night we find our way
@@ -169,5 +184,5 @@ Feel the beat inside your soul
 Let the ${genre} take control
 We are dancing through the night
 In this ${adj} ${theme} light
-Forever dancing in the light`;
+Forever dancing in the light${languageNote}`;
 }

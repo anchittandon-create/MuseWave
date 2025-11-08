@@ -218,6 +218,16 @@ const buildLyricsFallback = (context: any): { lyrics: string } => {
   const basePrompt =
     (typeof context?.prompt === 'string' && context.prompt.trim()) ||
     'Dancing through the digital night';
+  
+  // Get target language from languages array or default to English
+  const targetLanguage = Array.isArray(context?.languages) && context.languages.length > 0
+    ? context.languages[0]
+    : 'English';
+  
+  const languageNote = targetLanguage.toLowerCase() !== 'english'
+    ? `\n\n[Note: These lyrics are generated in English. For ${targetLanguage} lyrics, please use the AI enhancement feature by clicking the sparkle icon next to the lyrics field.]`
+    : '';
+  
   return {
     lyrics: `Verse 1:
 ${basePrompt}
@@ -239,7 +249,7 @@ Every beat, every rhyme
 
 Outro:
 ${basePrompt}
-Until the morning light`,
+Until the morning light${languageNote}`,
   };
 };
 
@@ -287,7 +297,7 @@ const createMockPlan = (fullPrompt: any, creativitySeed: number): MusicPlan => {
         synthLine: { pattern: 'pads', timbre: 'warm' },
         leadMelody: [],
         effects: { reverb: 0.4, compressionThreshold: -12, stereoWidth: 0.6 },
-        lyrics: null,
+        lyrics: undefined,
       },
       {
         name: 'Verse',
@@ -326,7 +336,7 @@ const createMockPlan = (fullPrompt: any, creativitySeed: number): MusicPlan => {
         synthLine: { pattern: 'pads', timbre: 'warm' },
         leadMelody: [],
         effects: { reverb: 0.7, compressionThreshold: -8, stereoWidth: 0.95 },
-        lyrics: null,
+        lyrics: undefined,
       },
     ],
     stems: { vocals: Boolean(lyrics.trim()), drums: true, bass: true, instruments: true },
@@ -434,14 +444,20 @@ export const enhanceLyrics = async (context: any) => {
   const cached = aiCache.get<{ lyrics: string }>('enhanceLyrics', context);
   if (cached) return cached;
 
-  const remote = await callAiEndpoint<{ lyrics?: string }>('/api/enhance-lyrics', { context });
+  // Ensure languages array is included in the context
+  const enhancedContext = {
+    ...context,
+    languages: context.languages || [],
+  };
+
+  const remote = await callAiEndpoint<{ lyrics?: string }>('/api/enhance-lyrics', { context: enhancedContext });
   if (remote?.lyrics) {
     const result = { lyrics: remote.lyrics };
     aiCache.set('enhanceLyrics', context, result, ULTRA_CACHE_TTL.LYRICS);
     return result;
   }
 
-  return buildLyricsFallback(context);
+  return buildLyricsFallback(enhancedContext);
 };
 
 export async function generateMusicPlan(

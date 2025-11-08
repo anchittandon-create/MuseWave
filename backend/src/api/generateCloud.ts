@@ -95,8 +95,9 @@ export async function generateHandler(req: FastifyRequest, reply: FastifyReply) 
           theme: input.musicPrompt,
           genre: input.genres[0],
           duration: input.durationSec,
+          languages: input.vocalLanguages || ['English'],
         });
-        debug.push(`✓ Generated lyrics with Gemini`);
+        debug.push(`✓ Generated lyrics with Gemini in ${input.vocalLanguages?.[0] || 'English'}`);
       } catch (error: any) {
         debug.push(`⚠ Lyrics generation failed: ${error.message}`);
       }

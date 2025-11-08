@@ -97,11 +97,18 @@ export async function generateLyrics(params: {
   theme: string;
   genre: string;
   duration: number;
+  language?: string;
+  languages?: string[];
 }): Promise<string> {
   const geminiClient = getGemini();
   const model = geminiClient.getGenerativeModel({ model: 'gemini-1.5-flash-8b' });
 
   const estimatedLines = Math.floor(params.duration / 5); // ~5 seconds per line
+  
+  // Determine target language from languages array or single language field
+  const targetLanguage = Array.isArray(params.languages) && params.languages.length > 0
+    ? params.languages[0]
+    : params.language || 'English';
 
   const prompt = `Write song lyrics for a ${params.genre} song about: ${params.theme}
   
@@ -110,7 +117,8 @@ Requirements:
 - Follow verse-chorus structure
 - Match ${params.genre} style
 - No markdown formatting, just plain text lyrics
-- Each line on a new line`;
+- Each line on a new line
+- **CRITICAL: Write ALL lyrics in ${targetLanguage} language**`;
 
   try {
     const result = await model.generateContent(prompt);
