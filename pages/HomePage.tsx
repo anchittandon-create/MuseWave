@@ -245,22 +245,6 @@ const HomePage = () => {
     }
   }, [location, navigate, toast]);
 
-  // Auto-suggest Indian artists if Hindi lyrics/language detected
-  useEffect(() => {
-    const languages = Array.isArray(formState.languages) ? formState.languages : [];
-    const containsHindiLanguage = languages.some(lang => lang.toLowerCase().includes('hindi'));
-    const containsHindiScript = /[\u0900-\u097F]/.test(formState.lyrics || '');
-    if (containsHindiLanguage || containsHindiScript) {
-      const suggested = ['A.R. Rahman', 'Shreya Ghoshal', 'Arijit Singh'];
-      setFormState(prev => {
-        const currentArtists = Array.isArray(prev.artists) ? prev.artists : [];
-        const missing = suggested.filter(name => !currentArtists.includes(name));
-        if (!missing.length) return prev;
-        return { ...prev, artists: [...currentArtists, ...missing] };
-      });
-    }
-  }, [formState.languages, formState.lyrics]);
-
   const resetJob = useCallback(() => {
     if (eventSourceRef.current) {
       eventSourceRef.current.close();

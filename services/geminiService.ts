@@ -619,8 +619,13 @@ export const enhancePrompt = async (context: any) => {
 };
 
 export const suggestGenres = async (context: any) => {
-  // Add timestamp to context to ensure uniqueness each time
-  const uniqueContext = { ...context, _timestamp: Date.now() };
+  // Genre suggestions based on prompt
+  // Add timestamp and prompt to context to ensure uniqueness
+  const uniqueContext = { 
+    ...context, 
+    _timestamp: Date.now(),
+    prompt: context.prompt || context.musicPrompt || ''
+  };
   
   const remote = await callAiEndpoint<{ genres?: string[] }>('/api/suggest-genres', { context: uniqueContext });
   if (remote?.genres?.length) {
@@ -634,8 +639,16 @@ export const suggestGenres = async (context: any) => {
 };
 
 export const suggestArtists = async (context: any) => {
-  // Add timestamp to context to ensure uniqueness each time
-  const uniqueContext = { ...context, _timestamp: Date.now() };
+  // Artist suggestions based on prompt, genre, language, and duration
+  // Add all contextual fields
+  const uniqueContext = { 
+    ...context, 
+    _timestamp: Date.now(),
+    prompt: context.prompt || context.musicPrompt || '',
+    genres: context.genres || [],
+    languages: context.languages || context.vocalLanguages || [],
+    duration: context.duration || 180
+  };
   
   const remote = await callAiEndpoint<{ artists?: string[] }>('/api/suggest-artists', { context: uniqueContext });
   if (remote?.artists?.length) {
@@ -649,8 +662,14 @@ export const suggestArtists = async (context: any) => {
 };
 
 export const suggestLanguages = async (context: any) => {
-  // Add timestamp to context to ensure uniqueness each time
-  const uniqueContext = { ...context, _timestamp: Date.now() };
+  // Language suggestions based on prompt and genre
+  // Add contextual fields
+  const uniqueContext = { 
+    ...context, 
+    _timestamp: Date.now(),
+    prompt: context.prompt || context.musicPrompt || '',
+    genres: context.genres || []
+  };
   
   const remote = await callAiEndpoint<{ languages?: string[] }>(
     '/api/suggest-languages',
@@ -667,8 +686,12 @@ export const suggestLanguages = async (context: any) => {
 };
 
 export const suggestInstruments = async (context: any) => {
-  // Add timestamp to context to ensure uniqueness each time
-  const uniqueContext = { ...context, _timestamp: Date.now() };
+  // Instrument suggestions based on genres
+  const uniqueContext = { 
+    ...context, 
+    _timestamp: Date.now(),
+    genres: context.genres || []
+  };
   
   const remote = await callAiEndpoint<{ instruments?: string[] }>(
     '/api/suggest-instruments',
@@ -685,23 +708,25 @@ export const suggestInstruments = async (context: any) => {
 };
 
 export const enhanceLyrics = async (context: any) => {
-  const cached = aiCache.get<{ lyrics: string }>('enhanceLyrics', context);
-  if (cached) return cached;
-
-  // Ensure languages array is included in the context
-  const enhancedContext = {
+  // Lyrics suggestions based on all other fields
+  // Add all contextual information
+  const uniqueContext = {
     ...context,
-    languages: context.languages || [],
+    _timestamp: Date.now(),
+    prompt: context.prompt || context.musicPrompt || '',
+    genres: context.genres || [],
+    languages: context.languages || context.vocalLanguages || [],
+    artists: context.artists || context.artistInspiration || [],
+    duration: context.duration || 180,
+    lyrics: context.lyrics || ''
   };
 
-  const remote = await callAiEndpoint<{ lyrics?: string }>('/api/enhance-lyrics', { context: enhancedContext });
+  const remote = await callAiEndpoint<{ lyrics?: string }>('/api/enhance-lyrics', { context: uniqueContext });
   if (remote?.lyrics) {
-    const result = { lyrics: remote.lyrics };
-    aiCache.set('enhanceLyrics', context, result, ULTRA_CACHE_TTL.LYRICS);
-    return result;
+    return { lyrics: remote.lyrics };
   }
 
-  return buildLyricsFallback(enhancedContext);
+  return buildLyricsFallback(uniqueContext);
 };
 
 export async function generateMusicPlan(

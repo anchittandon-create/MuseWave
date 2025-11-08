@@ -152,26 +152,21 @@ const MuseForgeForm = ({
 
       {/* Genres */}
       <div className="space-y-2">
-         <div className="flex items-center justify-between">
-            <SuggestionButton field="genres" />
+        <div className="flex items-center justify-between">
+          <label className="block text-sm font-medium text-gray-300">
+            Genres
+          </label>
+          <SuggestionButton field="genres" />
         </div>
-        <AutosuggestInput
-          label="Genres"
-          field="genres"
+        <TagInput
           value={formState.genres}
           onChange={(v) => handleFieldChange('genres', v)}
-          placeholder="Type to search AI-suggested genres..."
-          context={{
-            musicPrompt: formState.prompt,
-            genres: formState.genres,
-            artistInspiration: formState.artists,
-            vocalLanguages: formState.languages,
-          }}
-          maxItems={5}
+          placeholder="Add genres (e.g., techno, house, ambient)..."
+          options={allGenres}
           disabled={isLoading}
         />
         <p className="text-xs text-gray-500">
-          AI-powered suggestions based on your prompt. Type to see context-aware genres.
+          Click the sparkle icon to get AI-suggested genres based on your prompt.
         </p>
       </div>
 
@@ -254,56 +249,40 @@ const MuseForgeForm = ({
       {/* Preferred Languages */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
+          <label className="block text-sm font-medium text-gray-300">
+            Preferred Vocal Languages
+          </label>
           <SuggestionButton field="languages" />
         </div>
-        <AutosuggestInput
-          label="Preferred Vocal Languages"
-          field="vocalLanguages"
+        <TagInput
           value={formState.languages}
           onChange={(v) => handleFieldChange('languages', v)}
-          placeholder="Type to search AI-suggested languages..."
-          context={{
-            musicPrompt: formState.prompt,
-            genres: formState.genres,
-            artistInspiration: formState.artists,
-            vocalLanguages: formState.languages,
-          }}
-          maxItems={5}
+          placeholder="Add languages (e.g., English, Hindi, Spanish)..."
+          options={languageOptions}
           disabled={isLoading}
         />
         <p className="text-xs text-gray-500">
-          AI suggests languages that complement your music style and audience.
+          Click the sparkle icon to get AI-suggested languages based on your prompt and genre.
         </p>
       </div>
 
       {/* Artist Inspiration */}
       <div className="space-y-2">
-         <div className="flex items-center justify-between">
-            <SuggestionButton field="artists" />
+        <div className="flex items-center justify-between">
+          <label className="block text-sm font-medium text-gray-300">
+            Artist Inspiration (Optional)
+          </label>
+          <SuggestionButton field="artists" />
         </div>
-        <AutosuggestInput
-          label="Artist Inspiration (Optional)"
-          field="artistInspiration"
+        <TagInput
           value={formState.artists}
           onChange={(v) => handleFieldChange('artists', v)}
-          placeholder="Type to search AI-suggested artists..."
-          context={{
-            musicPrompt: formState.prompt,
-            genres: formState.genres,
-            artistInspiration: formState.artists,
-            vocalLanguages: formState.languages,
-          }}
-          maxItems={5}
+          placeholder="Add artist names (e.g., Fred again.., Jon Hopkins)..."
+          options={[]}
           disabled={isLoading}
         />
         <p className="text-xs text-gray-500">
-          {formState.languages.some(lang => 
-            ['hindi', 'tamil', 'telugu', 'bengali', 'marathi', 'punjabi'].includes(lang.toLowerCase())
-          ) ? (
-            <>Artist suggestions disabled for regional languages. You can still add custom artists.</>
-          ) : (
-            <>AI suggests artists based on your selected genres and style.</>
-          )}
+          Click the sparkle icon to get AI-suggested artists based on your prompt, genre, language, and duration.
         </p>
       </div>
 
