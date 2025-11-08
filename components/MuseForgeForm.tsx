@@ -6,6 +6,7 @@ import React from 'react';
 import { GENRES } from '../constants';
 import Button from './ui/Button';
 import TagInput from './ui/TagInput';
+import { AutosuggestInput } from './AutosuggestInput';
 import Slider from './ui/Slider';
 import Switch from './ui/Switch';
 // FIX: Changed import path to point to .tsx file.
@@ -152,21 +153,26 @@ const MuseForgeForm = ({
       {/* Genres */}
       <div className="space-y-2">
          <div className="flex items-center justify-between">
-            <label htmlFor="genres" className="block text-sm font-medium text-gray-300">
-                Genres
-            </label>
             <SuggestionButton field="genres" />
         </div>
-        <p className="text-sm text-gray-500">
-          Select or type in genres. The AI will use these to guide the style.
-        </p>
-        <TagInput
+        <AutosuggestInput
+          label="Genres"
+          field="genres"
           value={formState.genres}
           onChange={(v) => handleFieldChange('genres', v)}
-          placeholder={formState.genres.length > 0 ? "" : "e.g., Techno, Ambient"}
-          options={allGenres}
+          placeholder="Type to search AI-suggested genres..."
+          context={{
+            musicPrompt: formState.prompt,
+            genres: formState.genres,
+            artistInspiration: formState.artists,
+            vocalLanguages: formState.languages,
+          }}
+          maxItems={5}
           disabled={isLoading}
         />
+        <p className="text-xs text-gray-500">
+          AI-powered suggestions based on your prompt. Type to see context-aware genres.
+        </p>
       </div>
 
       {/* Duration */}
@@ -248,40 +254,58 @@ const MuseForgeForm = ({
       {/* Preferred Languages */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <label htmlFor="languages" className="block text-sm font-medium text-gray-300">
-            Preferred Vocal Languages
-          </label>
           <SuggestionButton field="languages" />
         </div>
-        <p className="text-sm text-gray-500">
-          Specify or let the AI suggest languages that complement the vibe and audience.
-        </p>
-        <TagInput
+        <AutosuggestInput
+          label="Preferred Vocal Languages"
+          field="vocalLanguages"
           value={formState.languages}
           onChange={(v) => handleFieldChange('languages', v)}
-          placeholder={formState.languages.length > 0 ? "" : "e.g., English, Hindi"}
-          options={languageOptions}
+          placeholder="Type to search AI-suggested languages..."
+          context={{
+            musicPrompt: formState.prompt,
+            genres: formState.genres,
+            artistInspiration: formState.artists,
+            vocalLanguages: formState.languages,
+          }}
+          maxItems={5}
           disabled={isLoading}
         />
+        <p className="text-xs text-gray-500">
+          AI suggests languages that complement your music style and audience.
+        </p>
       </div>
 
       {/* Artist Inspiration */}
       <div className="space-y-2">
          <div className="flex items-center justify-between">
-            <label htmlFor="artists" className="block text-sm font-medium text-gray-300">
-                Artist Inspiration (Optional)
-            </label>
             <SuggestionButton field="artists" />
         </div>
-        <p className="text-sm text-gray-500">
-          Guide the AI with artists whose style you admire. The AI will consider your selected genres and languages when suggesting artists.
-        </p>
-        <TagInput
+        <AutosuggestInput
+          label="Artist Inspiration (Optional)"
+          field="artistInspiration"
           value={formState.artists}
           onChange={(v) => handleFieldChange('artists', v)}
-          placeholder={formState.artists.length > 0 ? "" : "e.g., Brian Eno, Aphex Twin"}
+          placeholder="Type to search AI-suggested artists..."
+          context={{
+            musicPrompt: formState.prompt,
+            genres: formState.genres,
+            artistInspiration: formState.artists,
+            vocalLanguages: formState.languages,
+          }}
+          maxItems={5}
           disabled={isLoading}
         />
+        <p className="text-xs text-gray-500">
+          {formState.languages.some(lang => 
+            ['hindi', 'tamil', 'telugu', 'bengali', 'marathi', 'punjabi'].includes(lang.toLowerCase())
+          ) ? (
+            <>Artist suggestions disabled for regional languages. You can still add custom artists.</>
+          ) : (
+            <>AI suggests artists based on your selected genres and style.</>
+          )}
+        </p>
+      </div>
       </div>
 
       {/* Lyrics / Vocal Theme */}
