@@ -10,9 +10,61 @@ interface CacheEntry {
   expiresAt: number;
 }
 
+/**
+ * Recent suggestions tracker to prevent repetition
+ * Stores last N suggestions per category
+ */
+class RecentSuggestionsTracker {
+  private history: Map<string, string[]> = new Map();
+  private readonly maxHistorySize = 20; // Keep last 20 suggestions per category
+
+  /**
+   * Add a suggestion to history
+   */
+  add(category: string, value: string | string[]): void {
+    const values = Array.isArray(value) ? value : [value];
+    const existing = this.history.get(category) || [];
+    
+    // Add new values to front, keep last N
+    const updated = [...values, ...existing].slice(0, this.maxHistorySize);
+    this.history.set(category, updated);
+  }
+
+  /**
+   * Check if value was recently suggested
+   */
+  wasRecentlySuggested(category: string, value: string): boolean {
+    const history = this.history.get(category) || [];
+    const normalized = value.toLowerCase().trim();
+    return history.some(item => item.toLowerCase().trim() === normalized);
+  }
+
+  /**
+   * Get recent suggestions for a category
+   */
+  getRecent(category: string): string[] {
+    return this.history.get(category) || [];
+  }
+
+  /**
+   * Clear history for a category
+   */
+  clearCategory(category: string): void {
+    this.history.delete(category);
+  }
+
+  /**
+   * Clear all history
+   */
+  clearAll(): void {
+    this.history.clear();
+  }
+}
+
 class SimpleCache {
   private cache: Map<string, CacheEntry> = new Map();
   private readonly cleanupInterval = 60000; // 1 minute
+  public recentSuggestions = new RecentSuggestionsTracker();
 
   constructor() {
     // Auto-cleanup expired entries every minute

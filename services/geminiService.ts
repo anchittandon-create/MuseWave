@@ -660,15 +660,29 @@ const sanitizePlan = (raw: any): MusicPlan | null => {
 
 export const enhancePrompt = async (context: any) => {
   // DISABLED CACHING for unique generation every time
-  // Add timestamp to ensure context is always unique
-  const uniqueContext = { ...context, _timestamp: Date.now() };
+  // Add timestamp AND random seed to ensure context is always unique
+  const uniqueContext = { 
+    ...context, 
+    _timestamp: Date.now(), 
+    _random: Math.random() 
+  };
   
   const remote = await callAiEndpoint<{ prompt?: string }>('/api/enhance-prompt', { context: uniqueContext });
   if (remote?.prompt) {
+    // Track prompt to avoid repetition
+    const wasRecent = aiCache.recentSuggestions.wasRecentlySuggested('prompts', remote.prompt);
+    if (wasRecent) {
+      console.warn('[Uniqueness] Prompt was recently suggested, regenerating');
+      return buildEnhancedPromptFallback(uniqueContext);
+    }
+    aiCache.recentSuggestions.add('prompts', remote.prompt);
+    console.log('[Unique] New enhanced prompt generated');
     return { prompt: remote.prompt };
   }
 
-  return buildEnhancedPromptFallback(uniqueContext);
+  const fallback = buildEnhancedPromptFallback(uniqueContext);
+  aiCache.recentSuggestions.add('prompts', fallback.prompt);
+  return fallback;
 };
 
 export const suggestGenres = async (context: any) => {
@@ -677,18 +691,35 @@ export const suggestGenres = async (context: any) => {
   const uniqueContext = { 
     ...context, 
     _timestamp: Date.now(),
+    _random: Math.random(), // Extra randomness
     prompt: context.prompt || context.musicPrompt || ''
   };
   
   const remote = await callAiEndpoint<{ genres?: string[] }>('/api/suggest-genres', { context: uniqueContext });
   if (remote?.genres?.length) {
-    const genres = dedupeList(remote.genres, 5);
+    let genres = dedupeList(remote.genres, 5);
+    
+    // Filter out recently suggested genres to ensure uniqueness
+    genres = genres.filter(g => !aiCache.recentSuggestions.wasRecentlySuggested('genres', g));
+    
+    // If all suggestions were recent, allow them but log warning
+    if (genres.length === 0) {
+      console.warn('[Uniqueness] All genres were recent, using fallback');
+      return buildGenreFallback(uniqueContext);
+    }
+    
+    // Track these suggestions
+    aiCache.recentSuggestions.add('genres', genres);
+    
     if (genres.length) {
+      console.log('[Unique] New genres:', genres);
       return { genres };
     }
   }
 
-  return buildGenreFallback(uniqueContext);
+  const fallback = buildGenreFallback(uniqueContext);
+  aiCache.recentSuggestions.add('genres', fallback.genres);
+  return fallback;
 };
 
 export const suggestArtists = async (context: any) => {
@@ -697,6 +728,7 @@ export const suggestArtists = async (context: any) => {
   const uniqueContext = { 
     ...context, 
     _timestamp: Date.now(),
+    _random: Math.random(), // Extra randomness
     prompt: context.prompt || context.musicPrompt || '',
     genres: context.genres || [],
     languages: context.languages || context.vocalLanguages || [],
@@ -705,13 +737,29 @@ export const suggestArtists = async (context: any) => {
   
   const remote = await callAiEndpoint<{ artists?: string[] }>('/api/suggest-artists', { context: uniqueContext });
   if (remote?.artists?.length) {
-    const artists = dedupeList(remote.artists, 5);
+    let artists = dedupeList(remote.artists, 5);
+    
+    // Filter out recently suggested artists to ensure uniqueness
+    artists = artists.filter(a => !aiCache.recentSuggestions.wasRecentlySuggested('artists', a));
+    
+    // If all suggestions were recent, use fallback
+    if (artists.length === 0) {
+      console.warn('[Uniqueness] All artists were recent, using fallback');
+      return buildArtistFallback(uniqueContext);
+    }
+    
+    // Track these suggestions
+    aiCache.recentSuggestions.add('artists', artists);
+    
     if (artists.length) {
+      console.log('[Unique] New artists:', artists);
       return { artists };
     }
   }
 
-  return buildArtistFallback(uniqueContext);
+  const fallback = buildArtistFallback(uniqueContext);
+  aiCache.recentSuggestions.add('artists', fallback.artists);
+  return fallback;
 };
 
 export const suggestLanguages = async (context: any) => {
@@ -720,6 +768,7 @@ export const suggestLanguages = async (context: any) => {
   const uniqueContext = { 
     ...context, 
     _timestamp: Date.now(),
+    _random: Math.random(), // Extra randomness
     prompt: context.prompt || context.musicPrompt || '',
     genres: context.genres || []
   };
@@ -729,13 +778,27 @@ export const suggestLanguages = async (context: any) => {
     { context: uniqueContext }
   );
   if (remote?.languages?.length) {
-    const languages = dedupeList(remote.languages, 4);
+    let languages = dedupeList(remote.languages, 4);
+    
+    // Filter out recently suggested languages
+    languages = languages.filter(l => !aiCache.recentSuggestions.wasRecentlySuggested('languages', l));
+    
+    if (languages.length === 0) {
+      console.warn('[Uniqueness] All languages were recent, using fallback');
+      return buildLanguageFallback(uniqueContext);
+    }
+    
+    aiCache.recentSuggestions.add('languages', languages);
+    
     if (languages.length) {
+      console.log('[Unique] New languages:', languages);
       return { languages };
     }
   }
 
-  return buildLanguageFallback(uniqueContext);
+  const fallback = buildLanguageFallback(uniqueContext);
+  aiCache.recentSuggestions.add('languages', fallback.languages);
+  return fallback;
 };
 
 export const suggestInstruments = async (context: any) => {
@@ -743,6 +806,7 @@ export const suggestInstruments = async (context: any) => {
   const uniqueContext = { 
     ...context, 
     _timestamp: Date.now(),
+    _random: Math.random(), // Extra randomness
     genres: context.genres || []
   };
   
@@ -751,13 +815,27 @@ export const suggestInstruments = async (context: any) => {
     { context: uniqueContext }
   );
   if (remote?.instruments?.length) {
-    const instruments = dedupeList(remote.instruments, 5);
+    let instruments = dedupeList(remote.instruments, 5);
+    
+    // Filter out recently suggested instruments
+    instruments = instruments.filter(i => !aiCache.recentSuggestions.wasRecentlySuggested('instruments', i));
+    
+    if (instruments.length === 0) {
+      console.warn('[Uniqueness] All instruments were recent, using fallback');
+      return buildInstrumentFallback(uniqueContext);
+    }
+    
+    aiCache.recentSuggestions.add('instruments', instruments);
+    
     if (instruments.length) {
+      console.log('[Unique] New instruments:', instruments);
       return { instruments };
     }
   }
 
-  return buildInstrumentFallback(uniqueContext);
+  const fallback = buildInstrumentFallback(uniqueContext);
+  aiCache.recentSuggestions.add('instruments', fallback.instruments);
+  return fallback;
 };
 
 export const enhanceLyrics = async (context: any) => {
