@@ -4,9 +4,12 @@ interface EnhanceLyricsRequest {
   context: {
     prompt?: string;
     genre?: string;
+    genres?: string[];
     mood?: string;
     language?: string;
     languages?: string[];
+    duration?: number;
+    artists?: string[];
     existingLyrics?: string;
   };
 }
@@ -66,21 +69,56 @@ async function enhanceWithGemini(context: any): Promise<string> {
   const targetLanguage = Array.isArray(context.languages) && context.languages.length > 0 
     ? context.languages[0] 
     : context.language || 'English';
+  
+  // Get genres (support both single genre and genres array)
+  const genres = Array.isArray(context.genres) && context.genres.length > 0
+    ? context.genres
+    : context.genre ? [context.genre] : ['Electronic'];
+  
+  // Get duration for structure guidance
+  const duration = context.duration || 180;
+  const durationNote = duration < 90 
+    ? 'Short track (under 90s): Keep it concise with 1-2 verses and chorus'
+    : duration < 180
+    ? 'Medium track (90-180s): Standard structure with 2 verses, chorus, and optional bridge'
+    : 'Long track (180s+): Full structure with multiple verses, chorus repetition, and bridge';
+  
+  // Get artists for inspiration
+  const artists = Array.isArray(context.artists) && context.artists.length > 0
+    ? context.artists.join(', ')
+    : 'Not specified';
 
   const prompt = `${context.existingLyrics ? 'Enhance and improve these lyrics' : 'Create song lyrics'} for this music context:
 
 ${context.existingLyrics ? `EXISTING LYRICS:\n${context.existingLyrics}\n\n` : ''}MUSIC CONTEXT:
 Prompt: "${context.prompt || 'Create a song'}"
-Genre: ${context.genre || 'Electronic'}
+Genres: ${genres.join(', ')}
 Mood: ${context.mood || 'Not specified'}
-**IMPORTANT: Generate lyrics in ${targetLanguage} language**
+Artists/Inspiration: ${artists}
+Duration: ${duration} seconds (${durationNote})
+**CRITICAL REQUIREMENT: Generate lyrics ENTIRELY in ${targetLanguage} language**
 
 ${context.existingLyrics ? 
-  'Improve the existing lyrics by:\n- Enhancing rhythm and flow\n- Strengthening emotional impact\n- Improving rhyme schemes\n- Adding more vivid imagery\n- Maintaining the original theme and message\n- Keeping the same language: ' + targetLanguage :
-  'Create original lyrics that:\n- Match the musical genre and mood\n- Have strong rhythm and flow\n- Include memorable hooks and choruses\n- Tell a compelling story or convey emotion\n- Use appropriate language and style\n- **MUST be written entirely in ' + targetLanguage + ' language**'
+  `Improve the existing lyrics by:
+- Enhancing rhythm and flow
+- Strengthening emotional impact
+- Improving rhyme schemes (appropriate for ${targetLanguage})
+- Adding more vivid imagery
+- Maintaining the original theme and message
+- MUST remain in ${targetLanguage} language
+- Match the ${genres.join('/')} genre style` :
+  `Create original lyrics that:
+- Match the ${genres.join('/')} genre and mood
+- Have strong rhythm and flow appropriate for ${targetLanguage}
+- Include memorable hooks and choruses
+- Tell a compelling story or convey emotion
+- Use language style appropriate for ${genres.join('/')} music
+- **ABSOLUTELY MUST be written entirely in ${targetLanguage} language**
+- Match the duration (${duration}s): ${durationNote}
+- Draw inspiration from artists like: ${artists}`
 }
 
-Structure: Verse - Chorus - Verse - Chorus - Bridge - Chorus
+Structure guidance: ${duration < 90 ? 'Verse - Chorus' : duration < 180 ? 'Verse - Chorus - Verse - Chorus' : 'Verse - Chorus - Verse - Chorus - Bridge - Final Chorus'}
 Return only the lyrics text in ${targetLanguage}, properly formatted with sections labeled.`;
 
   const result = await model.generateContent(prompt);

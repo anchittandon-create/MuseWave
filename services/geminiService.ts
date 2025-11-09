@@ -369,12 +369,29 @@ const buildGenreFallback = (context: any): { genres: string[] } => {
 };
 
 const buildArtistFallback = (context: any): { artists: string[] } => {
-  // Get existing artists and genres for context
+  // Get existing artists, genres, and languages for context
   const existingArtists = (context?.artists || []).map((a: string) => a.toLowerCase());
   const genres = context?.genres || [];
+  const languages = context?.languages || context?.vocalLanguages || [];
   
   // Filter out already selected artists
   const availableArtists = ARTIST_FALLBACKS.filter(a => !existingArtists.includes(a.toLowerCase()));
+  
+  // Language-specific artist suggestions
+  const languageArtistMap: Record<string, string[]> = {
+    'spanish': ['Bad Bunny', 'Rosalía', 'J Balvin', 'Karol G', 'Rauw Alejandro'],
+    'french': ['Aya Nakamura', 'Stromae', 'Christine and the Queens', 'Angèle', 'PNL'],
+    'hindi': ['A.R. Rahman', 'Arijit Singh', 'Shreya Ghoshal', 'Nucleya', 'Ritviz'],
+    'portuguese': ['Anitta', 'Pabllo Vittar', 'Alok', 'Vintage Culture'],
+    'korean': ['BTS', 'BLACKPINK', 'Peggy Gou', 'epik high', 'PSY'],
+    'japanese': ['Hikaru Utada', 'Ken Ishii', 'Yasutaka Nakata', 'Nujabes'],
+    'arabic': ['Amr Diab', 'Nancy Ajram', 'Cairokee', 'Mashrou Leila'],
+    'german': ['Paul Kalkbrenner', 'Robin Schulz', 'Fritz Kalkbrenner', 'Alle Farben'],
+    'italian': ['Mahmood', 'Piero Pelù', 'Tale of Us', 'Anyma'],
+    'mandarin': ['Jay Chou', 'Jolin Tsai', 'Lexie Liu', 'Higher Brothers'],
+    'tamil': ['A.R. Rahman', 'Anirudh Ravichander', 'Santhosh Narayanan'],
+    'telugu': ['Devi Sri Prasad', 'Thaman S', 'S. Thaman'],
+  };
   
   // Genre-specific artist suggestions
   const genreArtistMap: Record<string, string[]> = {
@@ -387,15 +404,23 @@ const buildArtistFallback = (context: any): { artists: string[] } => {
     'electronica': ['Four Tet', 'Bicep', 'Bonobo', 'Floating Points'],
   };
   
-  // Find contextual artists based on selected genres
   let contextualArtists: string[] = [];
+  
+  // Priority 1: Find artists based on selected languages
+  for (const language of languages) {
+    const langLower = language.toLowerCase();
+    const matchingArtists = languageArtistMap[langLower] || [];
+    contextualArtists.push(...matchingArtists.filter(a => !existingArtists.includes(a.toLowerCase())));
+  }
+  
+  // Priority 2: Find artists based on selected genres
   for (const genre of genres) {
     const genreLower = genre.toLowerCase();
     const matchingArtists = genreArtistMap[genreLower] || [];
     contextualArtists.push(...matchingArtists.filter(a => !existingArtists.includes(a.toLowerCase())));
   }
   
-  // Dedupe and shuffle
+  // Dedupe and prioritize language-based suggestions
   const uniqueContextual = [...new Set(contextualArtists)].slice(0, 3);
   const shuffled = shuffleList(availableArtists);
   const limit = 5;
@@ -472,37 +497,65 @@ const buildLyricsFallback = (context: any): { lyrics: string } => {
     (typeof context?.prompt === 'string' && context.prompt.trim()) ||
     'Dancing through the digital night';
   
-  // Get target language from languages array or default to English
-  const targetLanguage = Array.isArray(context?.languages) && context.languages.length > 0
-    ? context.languages[0]
-    : 'English';
+  const genres = context?.genres || [];
+  const duration = context?.duration || 180;
+  const primaryGenre = genres.length > 0 ? genres[0].toLowerCase() : 'electronic';
   
-  const languageNote = targetLanguage.toLowerCase() !== 'english'
+  // Get target language from languages array or default to English
+  const languages = context?.languages || context?.vocalLanguages || [];
+  const targetLanguage = languages.length > 0 ? languages[0] : 'English';
+  const targetLanguageLower = targetLanguage.toLowerCase();
+  
+  // Generate contextual lyrics based on genre
+  const genreLyricsTemplates: Record<string, { verse: string; chorus: string; bridge: string }> = {
+    'techno': {
+      verse: `Pulse through the machines tonight\nRhythm drives the morning light\n${basePrompt}\nWhere the beat and mind unite`,
+      chorus: `Lost in frequencies, we transcend\nMinimal sounds that never end\nIn the darkness, we ascend\nWhere body and machine blend`,
+      bridge: `Synthesized and hypnotized\nIn the groove, we realize\nTechno dreams materialize`
+    },
+    'house': {
+      verse: `Feeling good, the bass is deep\n${basePrompt}\nGroove so strong, we lose our feet\nHouse music all night long`,
+      chorus: `This is what we came here for\nDancing, moving on the floor\nHands up high, we want some more\nHouse music to the core`,
+      bridge: `Piano chords and clapping hands\nUnited by these soulful strands\nTogether we make our stand`
+    },
+    'ambient': {
+      verse: `Floating through ethereal space\n${basePrompt}\nGentle waves at slower pace\nPeace found in this sacred place`,
+      chorus: `Breathe in light, exhale the dark\nAmbient sounds ignite the spark\nStillness leaves its gentle mark\nWhere consciousness embarks`,
+      bridge: `Layers drift like morning mist\nIn this sonic therapist\nMoments that forever persist`
+    },
+    'trap': {
+      verse: `Heavy bass, the 808 knocks\n${basePrompt}\nHi-hats roll, the whole block rocks\nTrap music never stops`,
+      chorus: `Turn it up, feel the drop\nBass so heavy, make it pop\nTrap anthem, straight to the top\nThis sound will never stop`,
+      bridge: `Snare rolls build the tension high\nDrop hits hard, touch the sky\nTrap wave never gonna die`
+    },
+    'dubstep': {
+      verse: `Building tension in the air\n${basePrompt}\nDrop incoming, best beware\nWobble bass beyond compare`,
+      chorus: `Feel the wub, feel the bass\nDubstep takes you to that place\nHeavy drops at rapid pace\nLost in sub-bass space`,
+      bridge: `Modulation, distortion reign\nEvery drop is pure insane\nBass music in our veins`
+    }
+  };
+  
+  const template = genreLyricsTemplates[primaryGenre] || genreLyricsTemplates['techno'];
+  
+  // Determine structure based on duration
+  let lyricsStructure = '';
+  if (duration < 90) {
+    // Short track: Verse + Chorus only
+    lyricsStructure = `Verse 1:\n${template.verse}\n\nChorus:\n${template.chorus}`;
+  } else if (duration < 180) {
+    // Medium track: Verse + Chorus + Verse
+    lyricsStructure = `Verse 1:\n${template.verse}\n\nChorus:\n${template.chorus}\n\nVerse 2:\n${basePrompt}\nMoving through the sonic night\nWhere everything feels so right\nLost in music, pure delight`;
+  } else {
+    // Long track: Full structure with bridge
+    lyricsStructure = `Verse 1:\n${template.verse}\n\nChorus:\n${template.chorus}\n\nVerse 2:\n${basePrompt}\nMoving through the sonic night\nWhere everything feels so right\nLost in music, pure delight\n\nChorus:\n${template.chorus}\n\nBridge:\n${template.bridge}\n\nFinal Chorus:\n${template.chorus}`;
+  }
+  
+  const languageNote = targetLanguageLower !== 'english'
     ? `\n\n[Note: These lyrics are generated in English. For ${targetLanguage} lyrics, please use the AI enhancement feature by clicking the sparkle icon next to the lyrics field.]`
     : '';
   
   return {
-    lyrics: `Verse 1:
-${basePrompt}
-Echoes in the fading light
-Lost in rhythm, found in sound
-Where electronic hearts are bound
-
-Chorus:
-We are the sound, we are the beat
-Moving together, feel the heat
-In this moment, we are free
-Lost in the music, you and me
-
-Bridge:
-Synthesized dreams come alive
-In this space where souls collide
-Digital love in analog time
-Every beat, every rhyme
-
-Outro:
-${basePrompt}
-Until the morning light${languageNote}`,
+    lyrics: lyricsStructure + languageNote
   };
 };
 
