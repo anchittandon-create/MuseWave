@@ -42,8 +42,8 @@
   ],
   "rewrites": [
     {
-      "source": "/(.*\\.(wav|mp3|mp4|webm|ogg|flac))",
-      "destination": "/$1"
+      "source": "/:path(.*\\.(?:wav|mp3|mp4|webm|ogg|flac))",
+      "destination": "/:path"
     },
     {
       "source": "/(.*)",
