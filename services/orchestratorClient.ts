@@ -86,8 +86,11 @@ export function subscribeToJob(
 ) {
   let polling = true;
   let pollCount = 0;
-  const maxPolls = 60; // 2 minutes at 2s intervals for real generation
+  // Increased from 60 to 900 to support 30-minute generations (900 * 2s = 1800s = 30 min)
+  const maxPolls = 900;
   const isMockJob = jobId.startsWith('mock-');
+  
+  console.log(`[OrchestratorClient] Starting subscription for job ${jobId} (mock: ${isMockJob})`);
 
   const pickNumber = (...values: unknown[]): number | undefined => {
     for (const value of values) {
@@ -134,9 +137,15 @@ export function subscribeToJob(
     
     pollCount++;
     
+    // Log every 30 polls (1 minute) to track progress
+    if (pollCount % 30 === 0) {
+      console.log(`[OrchestratorClient] Poll #${pollCount}/${maxPolls} for job ${jobId}`);
+    }
+    
     if (isMockJob) {
       // Simulate mock job progression with more realistic stages
       if (pollCount >= maxPolls) {
+        console.log('[OrchestratorClient] Mock job completing');
         onEvent({ status: 'complete', pct: 100, label: 'Mock generation complete! 🎉' });
         polling = false;
         return;
@@ -167,6 +176,10 @@ export function subscribeToJob(
     
     // Real backend polling - check backend-neo first
     const backendUrl = process.env.BACKEND_NEO_URL || 'http://localhost:3002';
+    
+    if (pollCount === 1 && !process.env.BACKEND_NEO_URL) {
+      console.warn('[OrchestratorClient] BACKEND_NEO_URL not configured, using default:', backendUrl);
+    }
     
     try {
       // Try backend-neo jobs endpoint first
@@ -269,11 +282,22 @@ export function subscribeToJob(
         setTimeout(poll, 2000);
       }
     } catch (err) {
-      console.error('Job polling error:', err);
+      console.error('[OrchestratorClient] Job polling error:', err);
+      
+      // Check if we've exceeded timeout
+      if (pollCount > maxPolls) {
+        console.error(`[OrchestratorClient] Real job ${jobId} timed out after ${maxPolls * 2} seconds`);
+        onError(new Error(`Generation timed out after ${Math.floor(maxPolls * 2 / 60)} minutes. This might mean the backend is not responding or the job is taking longer than expected.`));
+        polling = false;
+        return;
+      }
+      
       // Don't immediately fail - try a few more times
       if (pollCount < 5) {
+        console.log('[OrchestratorClient] Retrying in 5 seconds...');
         setTimeout(poll, 5000); // Retry in 5 seconds
       } else {
+        console.error('[OrchestratorClient] Multiple polling errors, stopping');
         onError(err);
         polling = false;
       }
@@ -348,7 +372,7 @@ export async function fetchJobResult(jobId: string): Promise<OrchestratorResult>
         if (!input || typeof input !== 'object') return null;
         const entries = Object.entries(input)
           .map(([style, value]) => {
-            const url = coerceUrl(typeof value === 'string' ? value : value?.url);
+            const url = coerceUrl(typeof value === 'string' ? value : (value as any)?.url);
             return url ? [style, url] : null;
           })
           .filter((entry): entry is [string, string] => Array.isArray(entry));
