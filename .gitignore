@@ -3,11 +3,16 @@ public/assets/
 .venv/
 venv/
 .DS_Store
+
+# Ignore media files except test files in public/
 *.wav
 *.mp3
 *.flac
 *.mp4
 *.mkv
+!public/test*.wav
+!public/test*.mp4
+
 .next/
 dist/
 .vercel/

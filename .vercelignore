@@ -16,6 +16,7 @@ node_modules/
 **/__pycache__/
 **/venv/
 
-# Ignore large files
+# Ignore large user-generated assets but keep test files
 public/assets/
-test*.wav
+
+# Note: test*.wav and test*.mp4 files in public/ are intentionally included for demo purposes
