@@ -174,7 +174,9 @@ const HomePage = () => {
     (pct: number, etaSeconds?: number | null, totalEtaSeconds?: number | null) => {
       const preferred = etaSeconds ?? totalEtaSeconds;
       if (preferred !== null && preferred !== undefined && Number.isFinite(preferred)) {
-        setTotalTimeLeft(formatSeconds(preferred));
+        // Cap ETA at 30 minutes (1800 seconds) for sanity
+        const cappedEta = Math.min(preferred, 1800);
+        setTotalTimeLeft(formatSeconds(cappedEta));
         return;
       }
 
@@ -190,7 +192,9 @@ const HomePage = () => {
       }
 
       const remaining = Math.max(0, (elapsed * (100 - pct)) / pct);
-      setTotalTimeLeft(formatSeconds(remaining));
+      // Cap calculated ETA at 30 minutes as well
+      const cappedRemaining = Math.min(remaining, 1800);
+      setTotalTimeLeft(formatSeconds(cappedRemaining));
     },
     []
   );
@@ -202,7 +206,10 @@ const HomePage = () => {
       const baselineDefault = STATUS_ETAS[status] ?? 10;
 
       if (!previous || previous.status !== status) {
-        const baseline = stageEtaSeconds ?? baselineDefault;
+        // Cap stage ETA at 2 minutes (120 seconds)
+        const baseline = stageEtaSeconds !== null && stageEtaSeconds !== undefined 
+          ? Math.min(stageEtaSeconds, 120) 
+          : baselineDefault;
         stageInfoRef.current = { status, startedAt: now, baseline };
         setStageTimeLeft(formatSeconds(baseline));
         return;
@@ -211,7 +218,7 @@ const HomePage = () => {
       const elapsed = (now - previous.startedAt) / 1000;
       const updatedBaseline =
         stageEtaSeconds !== null && stageEtaSeconds !== undefined
-          ? stageEtaSeconds + elapsed
+          ? Math.min(stageEtaSeconds + elapsed, 120)  // Cap at 2 minutes
           : previous.baseline ?? baselineDefault;
 
       stageInfoRef.current = {

@@ -146,28 +146,47 @@ export function subscribeToJob(
       // Simulate mock job progression with more realistic stages
       if (pollCount >= maxPolls) {
         console.log('[OrchestratorClient] Mock job completing');
-        onEvent({ status: 'complete', pct: 100, label: 'Mock generation complete! 🎉' });
+        onEvent({ status: 'complete', pct: 100, label: 'Mock generation complete! 🎉', etaSeconds: 0, totalEtaSeconds: 0, stageEtaSeconds: 0 });
         polling = false;
         return;
       }
       
       const progress = Math.min(95, Math.floor((pollCount / maxPolls) * 100));
+      
+      // Stage definitions with realistic durations (in seconds)
       const stages = [
-        { status: 'planning', label: 'Planning your track...' },
-        { status: 'generating-instruments', label: 'Generating instruments...' },
-        { status: 'synthesizing-vocals', label: 'Creating melodies and vocals...' },
-        { status: 'mixing-mastering', label: 'Mixing and mastering...' },
-        { status: 'rendering-video', label: 'Rendering video content...' },
-        { status: 'finalizing', label: 'Finalizing output...' }
+        { status: 'planning', label: 'Planning your track...', duration: 10 },
+        { status: 'generating-instruments', label: 'Generating instruments...', duration: 15 },
+        { status: 'synthesizing-vocals', label: 'Creating melodies and vocals...', duration: 15 },
+        { status: 'mixing-mastering', label: 'Mixing and mastering...', duration: 10 },
+        { status: 'rendering-video', label: 'Rendering video content...', duration: 15 },
+        { status: 'finalizing', label: 'Finalizing output...', duration: 5 }
       ];
       
+      // Calculate total duration and stage progress
+      const totalDuration = stages.reduce((sum, s) => sum + s.duration, 0); // 70 seconds total
       const stageIndex = Math.floor((pollCount / maxPolls) * stages.length);
-      const stage = stages[Math.min(stageIndex, stages.length - 1)];
+      const currentStage = stages[Math.min(stageIndex, stages.length - 1)];
+      
+      // Calculate how far we are into the current stage
+      const pollsPerStage = maxPolls / stages.length;
+      const pollsIntoStage = pollCount - (stageIndex * pollsPerStage);
+      const stageProgress = pollsIntoStage / pollsPerStage;
+      
+      // Calculate stage ETA (remaining time in current stage)
+      const stageEtaSeconds = Math.max(0, Math.round(currentStage.duration * (1 - stageProgress)));
+      
+      // Calculate total ETA (remaining time for all stages)
+      const elapsedTime = (pollCount / maxPolls) * totalDuration;
+      const totalEtaSeconds = Math.max(0, Math.round(totalDuration - elapsedTime));
       
       onEvent({ 
-        status: stage.status, 
+        status: currentStage.status, 
         pct: progress,
-        label: stage.label
+        label: currentStage.label,
+        etaSeconds: totalEtaSeconds,
+        totalEtaSeconds: totalEtaSeconds,
+        stageEtaSeconds: stageEtaSeconds
       });
       
       setTimeout(poll, 2000);
