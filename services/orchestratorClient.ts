@@ -19,33 +19,26 @@ export type OrchestratorResult = {
 };
 
 export async function startGeneration(payload: Record<string, unknown>) {
-  // DEVELOPMENT MODE: Use local mock generation
-  if (process.env.NODE_ENV === 'development' || !process.env.BACKEND_NEO_URL) {
-    console.info('[MuseWave] Using local mock generation (backend not available)');
-    
-    // Generate a mock job ID and plan
-    const mockJobId = `mock-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const mockPlan = {
-      title: (payload.musicPrompt as string)?.substring(0, 30) || 'Generated Track',
-      genre: (payload.genres as string[])?.[0] || 'electronic',
-      bpm: 120 + Math.floor(Math.random() * 20),
-      duration: payload.duration || 90,
-      sections: ['intro', 'verse', 'chorus', 'bridge', 'outro'],
-    };
-    
-    return { 
-      jobId: mockJobId, 
-      plan: mockPlan 
-    };
+  // Require backend URL to be configured
+  const backendUrl = process.env.VITE_BACKEND_NEO_URL || process.env.BACKEND_NEO_URL;
+  
+  if (!backendUrl) {
+    throw new Error(
+      'Backend URL not configured. Please set VITE_BACKEND_NEO_URL environment variable. ' +
+      'For local development: VITE_BACKEND_NEO_URL=http://localhost:3002 ' +
+      'For production: Set in Vercel environment variables'
+    );
   }
 
-  // PRODUCTION MODE: Call real backend-neo API
-  const backendUrl = process.env.BACKEND_NEO_URL || 'http://localhost:3002';
+  console.info(`[MuseWave] Connecting to backend: ${backendUrl}`);
   
   try {
     const response = await fetch(`${backendUrl}/api/generate/pipeline`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.VITE_API_KEY || process.env.DEFAULT_API_KEY || ''}`
+      },
       body: JSON.stringify(payload),
     });
     
@@ -55,27 +48,18 @@ export async function startGeneration(payload: Record<string, unknown>) {
     }
     
     const data = await response.json();
+    
+    if (!data.jobId) {
+      throw new Error('Backend did not return a job ID');
+    }
+    
     return { 
       jobId: data.jobId, 
       plan: data.plan || null 
     };
   } catch (error) {
-    console.warn('[MuseWave] Backend not available, falling back to mock generation');
-    
-    // Fallback to mock generation if backend fails
-    const mockJobId = `mock-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const mockPlan = {
-      title: (payload.musicPrompt as string)?.substring(0, 30) || 'Generated Track',
-      genre: (payload.genres as string[])?.[0] || 'electronic',
-      bpm: 120 + Math.floor(Math.random() * 20),
-      duration: payload.duration || 90,
-      sections: ['intro', 'verse', 'chorus', 'bridge', 'outro'],
-    };
-    
-    return { 
-      jobId: mockJobId, 
-      plan: mockPlan 
-    };
+    console.error('[MuseWave] Backend generation failed:', error);
+    throw error instanceof Error ? error : new Error('Failed to start generation');
   }
 }
 
@@ -88,9 +72,8 @@ export function subscribeToJob(
   let pollCount = 0;
   // Increased from 60 to 900 to support 30-minute generations (900 * 2s = 1800s = 30 min)
   const maxPolls = 900;
-  const isMockJob = jobId.startsWith('mock-');
   
-  console.log(`[OrchestratorClient] Starting subscription for job ${jobId} (mock: ${isMockJob})`);
+  console.log(`[OrchestratorClient] Starting subscription for job ${jobId}`);
 
   const pickNumber = (...values: unknown[]): number | undefined => {
     for (const value of values) {
@@ -142,74 +125,25 @@ export function subscribeToJob(
       console.log(`[OrchestratorClient] Poll #${pollCount}/${maxPolls} for job ${jobId}`);
     }
     
-    if (isMockJob) {
-      // Simulate mock job progression with more realistic stages
-      if (pollCount >= maxPolls) {
-        console.log('[OrchestratorClient] Mock job completing');
-        onEvent({ status: 'complete', pct: 100, label: 'Mock generation complete! 🎉', etaSeconds: 0, totalEtaSeconds: 0, stageEtaSeconds: 0 });
-        polling = false;
-        return;
-      }
-      
-      const progress = Math.min(95, Math.floor((pollCount / maxPolls) * 100));
-      
-      // Stage definitions with realistic durations (in seconds)
-      const stages = [
-        { status: 'planning', label: 'Planning your track...', duration: 10 },
-        { status: 'generating-instruments', label: 'Generating instruments...', duration: 15 },
-        { status: 'synthesizing-vocals', label: 'Creating melodies and vocals...', duration: 15 },
-        { status: 'mixing-mastering', label: 'Mixing and mastering...', duration: 10 },
-        { status: 'rendering-video', label: 'Rendering video content...', duration: 15 },
-        { status: 'finalizing', label: 'Finalizing output...', duration: 5 }
-      ];
-      
-      // Calculate total duration and stage progress
-      const totalDuration = stages.reduce((sum, s) => sum + s.duration, 0); // 70 seconds total
-      const stageIndex = Math.floor((pollCount / maxPolls) * stages.length);
-      const currentStage = stages[Math.min(stageIndex, stages.length - 1)];
-      
-      // Calculate how far we are into the current stage
-      const pollsPerStage = maxPolls / stages.length;
-      const pollsIntoStage = pollCount - (stageIndex * pollsPerStage);
-      const stageProgress = pollsIntoStage / pollsPerStage;
-      
-      // Calculate stage ETA (remaining time in current stage)
-      const stageEtaSeconds = Math.max(0, Math.round(currentStage.duration * (1 - stageProgress)));
-      
-      // Calculate total ETA (remaining time for all stages)
-      const elapsedTime = (pollCount / maxPolls) * totalDuration;
-      const totalEtaSeconds = Math.max(0, Math.round(totalDuration - elapsedTime));
-      
-      onEvent({ 
-        status: currentStage.status, 
-        pct: progress,
-        label: currentStage.label,
-        etaSeconds: totalEtaSeconds,
-        totalEtaSeconds: totalEtaSeconds,
-        stageEtaSeconds: stageEtaSeconds
-      });
-      
-      setTimeout(poll, 2000);
+    // Real backend polling only - no mock fallback
+    const backendUrl = process.env.VITE_BACKEND_NEO_URL || process.env.BACKEND_NEO_URL;
+    
+    if (!backendUrl) {
+      onError(new Error('Backend URL not configured. Set VITE_BACKEND_NEO_URL environment variable.'));
+      polling = false;
       return;
     }
     
-    // Real backend polling - check backend-neo first
-    const backendUrl = process.env.BACKEND_NEO_URL || 'http://localhost:3002';
-    
-    if (pollCount === 1 && !process.env.BACKEND_NEO_URL) {
-      console.warn('[OrchestratorClient] BACKEND_NEO_URL not configured, using default:', backendUrl);
-    }
-    
     try {
-      // Try backend-neo jobs endpoint first
-      let response = await fetch(`${backendUrl}/api/jobs/${jobId}`);
+      // Call backend-neo jobs endpoint
+      const response = await fetch(`${backendUrl}/api/jobs/${jobId}`, {
+        headers: {
+          'Authorization': `Bearer ${process.env.VITE_API_KEY || process.env.DEFAULT_API_KEY || ''}`
+        }
+      });
       
       if (!response.ok) {
-        // Fallback to vercel API endpoint
-        response = await fetch(`/api/jobs/${jobId}`);
-        if (!response.ok) {
-          throw new Error(`Job fetch failed: ${response.statusText}`);
-        }
+        throw new Error(`Job fetch failed: ${response.statusText}`);
       }
       
       const job = await response.json();
@@ -333,37 +267,23 @@ export function subscribeToJob(
 }
 
 export async function fetchJobResult(jobId: string): Promise<OrchestratorResult> {
-  const isMockJob = jobId.startsWith('mock-');
-  
-  if (isMockJob) {
-    // Return mock result for demo purposes
-    return {
-      audioUrl: '/test.wav', // Demo audio file
-      videoUrls: {
-        lyric: '/test-lyric-video.mp4', // Mock lyric video
-        official: '/test-official-video.mp4', // Mock official video
-      },
-      plan: {
-        title: 'Mock Generated Track',
-        genre: 'electronic',
-        bpm: 120,
-        sections: ['intro', 'verse', 'chorus', 'outro']
-      },
+  const backendUrl = process.env.VITE_BACKEND_NEO_URL || process.env.BACKEND_NEO_URL;
+
+  if (!backendUrl) {
+    return { 
+      error: 'Backend URL not configured. Set VITE_BACKEND_NEO_URL environment variable.' 
     };
   }
 
-  const backendUrl = process.env.BACKEND_NEO_URL || 'http://localhost:3002';
-
   try {
-    // Try backend-neo jobs endpoint first
-    let response = await fetch(`${backendUrl}/api/jobs/${jobId}`);
+    const response = await fetch(`${backendUrl}/api/jobs/${jobId}`, {
+      headers: {
+        'Authorization': `Bearer ${process.env.VITE_API_KEY || process.env.DEFAULT_API_KEY || ''}`
+      }
+    });
     
     if (!response.ok) {
-      // Fallback to vercel API endpoint
-      response = await fetch(`/api/jobs/${jobId}`);
-      if (!response.ok) {
-        return { error: `Fetch failed: ${response.statusText}` };
-      }
+      return { error: `Fetch failed: ${response.statusText}` };
     }
     
     const job = await response.json();

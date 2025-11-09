@@ -8,6 +8,7 @@
     "build": "vite build",
     "build:vercel": "vite build",
     "preview": "vite preview",
+    "check:config": "node scripts/check-config.mjs",
     "smoke": "npm run build && node scripts/smoke-playwright.mjs",
     "prepare": "husky",
     "postinstall": "node scripts/fix-rollup-native.mjs",
