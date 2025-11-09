@@ -65,10 +65,12 @@ async function enhanceWithGemini(context: any): Promise<string> {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY!);
   const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-  // Determine target language from languages array or single language field
-  const targetLanguage = Array.isArray(context.languages) && context.languages.length > 0 
-    ? context.languages[0] 
-    : context.language || 'English';
+  // Get all target languages from languages array
+  const languages = Array.isArray(context.languages) && context.languages.length > 0 
+    ? context.languages 
+    : (context.language ? [context.language] : ['English']);
+  
+  const isMultiLanguage = languages.length > 1;
   
   // Get genres (support both single genre and genres array)
   const genres = Array.isArray(context.genres) && context.genres.length > 0
@@ -88,6 +90,33 @@ async function enhanceWithGemini(context: any): Promise<string> {
     ? context.artists.join(', ')
     : 'Not specified';
 
+  // Create multi-language instruction
+  const languageInstructions = isMultiLanguage
+    ? `**CRITICAL MULTI-LANGUAGE REQUIREMENT:**
+- The user has selected ${languages.length} languages: ${languages.join(', ')}
+- You MUST use ALL of these languages in the lyrics
+- Use one of these approaches:
+  1. VERSE-BY-VERSE: Write each verse in a different language (Verse 1 in ${languages[0]}, Verse 2 in ${languages[1]}, etc.)
+  2. CODE-SWITCHING: Mix languages naturally within verses (like real multilingual songs)
+  3. PARALLEL STRUCTURE: Repeat key lines or chorus in each language
+- The chorus can be in the primary language (${languages[0]}) or mix all languages
+- Make it feel natural and musical, not forced or awkward
+- Label each section clearly (e.g., "Verse 1 (${languages[0]}):", "Verse 2 (${languages[1]}):")
+
+Example structure for ${languages.join('/')}:
+Verse 1 (${languages[0]}):
+[Lyrics in ${languages[0]}]
+
+Chorus (${languages[0]}):
+[Main chorus in ${languages[0]}]
+
+Verse 2 (${languages[1] || languages[0]}):
+[Lyrics in ${languages[1] || languages[0]}]
+
+${languages[2] ? `Verse 3 (${languages[2]}):\n[Lyrics in ${languages[2]}]\n\n` : ''}Chorus (Mixed):
+[Chorus with phrases from ${languages.slice(0, 2).join(' and ')}]`
+    : `**CRITICAL REQUIREMENT: Generate lyrics ENTIRELY in ${languages[0]} language**`;
+
   const prompt = `${context.existingLyrics ? 'Enhance and improve these lyrics' : 'Create song lyrics'} for this music context:
 
 ${context.existingLyrics ? `EXISTING LYRICS:\n${context.existingLyrics}\n\n` : ''}MUSIC CONTEXT:
@@ -96,30 +125,33 @@ Genres: ${genres.join(', ')}
 Mood: ${context.mood || 'Not specified'}
 Artists/Inspiration: ${artists}
 Duration: ${duration} seconds (${durationNote})
-**CRITICAL REQUIREMENT: Generate lyrics ENTIRELY in ${targetLanguage} language**
+
+${languageInstructions}
 
 ${context.existingLyrics ? 
   `Improve the existing lyrics by:
 - Enhancing rhythm and flow
 - Strengthening emotional impact
-- Improving rhyme schemes (appropriate for ${targetLanguage})
+- Improving rhyme schemes (appropriate for ${languages.join('/')})
 - Adding more vivid imagery
 - Maintaining the original theme and message
-- MUST remain in ${targetLanguage} language
+- ${isMultiLanguage ? `MUST use ALL ${languages.length} languages: ${languages.join(', ')}` : `MUST remain in ${languages[0]} language`}
 - Match the ${genres.join('/')} genre style` :
   `Create original lyrics that:
 - Match the ${genres.join('/')} genre and mood
-- Have strong rhythm and flow appropriate for ${targetLanguage}
+- Have strong rhythm and flow appropriate for ${languages.join('/')}
 - Include memorable hooks and choruses
 - Tell a compelling story or convey emotion
 - Use language style appropriate for ${genres.join('/')} music
-- **ABSOLUTELY MUST be written entirely in ${targetLanguage} language**
+- **ABSOLUTELY MUST use ALL languages: ${languages.join(', ')}**
 - Match the duration (${duration}s): ${durationNote}
 - Draw inspiration from artists like: ${artists}`
 }
 
 Structure guidance: ${duration < 90 ? 'Verse - Chorus' : duration < 180 ? 'Verse - Chorus - Verse - Chorus' : 'Verse - Chorus - Verse - Chorus - Bridge - Final Chorus'}
-Return only the lyrics text in ${targetLanguage}, properly formatted with sections labeled.`;
+${isMultiLanguage 
+  ? `Return the lyrics with clear language labels for each section (e.g., "Verse 1 (${languages[0]}):", "Chorus (Mixed):").` 
+  : `Return only the lyrics text in ${languages[0]}, properly formatted with sections labeled.`}`;
 
   const result = await model.generateContent(prompt);
   return result.response.text().trim();
@@ -130,10 +162,13 @@ function enhanceLyricsFallback(context: any): string {
   const mood = (context.mood || '').toLowerCase();
   const prompt = context.prompt || 'Create a song';
   
-  // Determine target language
-  const targetLanguage = Array.isArray(context.languages) && context.languages.length > 0 
-    ? context.languages[0] 
-    : context.language || 'English';
+  // Get all target languages
+  const languages = Array.isArray(context.languages) && context.languages.length > 0 
+    ? context.languages 
+    : (context.language ? [context.language] : ['English']);
+  
+  const isMultiLanguage = languages.length > 1;
+  const primaryLanguage = languages[0];
   
   // If we have existing lyrics, enhance them minimally
   if (context.existingLyrics) {
@@ -150,7 +185,14 @@ function enhanceLyricsFallback(context: any): string {
       }
       return line;
     });
-    return enhanced.join('\n') + `\n\n[Note: Lyrics should be translated to ${targetLanguage}]`;
+    
+    const multilangNote = isMultiLanguage
+      ? `\n\n[Note: To generate lyrics in all ${languages.length} languages (${languages.join(', ')}), please provide a Gemini API key or manually translate the verses.]`
+      : primaryLanguage.toLowerCase() !== 'english'
+      ? `\n\n[Note: Lyrics should be translated to ${primaryLanguage}. Use the AI enhancement feature with a Gemini API key for automatic translation.]`
+      : '';
+    
+    return enhanced.join('\n') + multilangNote;
   }
   
   // Generate new lyrics based on genre and mood
@@ -183,8 +225,14 @@ function enhanceLyricsFallback(context: any): string {
   
   const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
   
-  const languageNote = targetLanguage.toLowerCase() !== 'english' 
-    ? `\n\n[Note: These lyrics are generated in English. For ${targetLanguage} lyrics, please use the Gemini AI enhancement by providing an API key, or manually translate these lyrics.]`
+  // Multi-language support in fallback (basic English template with notes)
+  const multiLangNote = isMultiLanguage
+    ? `\n\n[Multi-Language Note: You selected ${languages.length} languages (${languages.join(', ')}). The fallback generator only creates English lyrics. For true multi-language lyrics, please:
+1. Click the sparkle icon next to the lyrics field
+2. Provide a Gemini API key (VITE_GEMINI_API_KEY)
+3. The AI will generate verse-by-verse lyrics in ${languages.join(', ')}]`
+    : primaryLanguage.toLowerCase() !== 'english'
+    ? `\n\n[Language Note: These lyrics are in English. For ${primaryLanguage} lyrics, use the AI enhancement feature (sparkle icon) with a Gemini API key, or manually translate these lyrics.]`
     : '';
   
   return `Verse 1:
@@ -222,5 +270,5 @@ Feel the beat inside your soul
 Let the ${genre} take control
 We are dancing through the night
 In this ${adj} ${theme} light
-Forever dancing in the light${languageNote}`;
+Forever dancing in the light${multiLangNote}`;
 }
