@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useMemo, useState, useCallback } from 'react';
 
 export type AppVersion = 'complete' | 'oss';
 
@@ -34,18 +34,20 @@ const getInitialVersion = (): AppVersion => {
 };
 
 export function AppVersionProvider({ children }: { children: React.ReactNode }) {
-  const [version, setVersion] = useState<AppVersion>(getInitialVersion);
+  const [version, setVersionState] = useState<AppVersion>(getInitialVersion);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      window.localStorage.setItem(STORAGE_KEY, version);
-    } catch (err) {
-      console.warn('[AppVersion] Failed to persist selection', err);
+  const setVersion = useCallback((value: AppVersion) => {
+    setVersionState(value);
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem(STORAGE_KEY, value);
+      } catch (err) {
+        console.warn('[AppVersion] Failed to persist selection', err);
+      }
     }
-  }, [version]);
+  }, []);
 
-  const value = useMemo<AppVersionContextValue>(() => ({ version, setVersion }), [version]);
+  const value = useMemo<AppVersionContextValue>(() => ({ version, setVersion }), [version, setVersion]);
 
   return <AppVersionContext.Provider value={value}>{children}</AppVersionContext.Provider>;
 }

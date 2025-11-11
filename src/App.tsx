@@ -31,7 +31,10 @@ function AppContent() {
     const nextVersion = event.target.value as AppVersion;
     if (nextVersion === version) return;
     setVersion(nextVersion);
-    toast(`Switched to ${VERSION_LABELS[nextVersion]}`);
+    toast(`Switched to ${VERSION_LABELS[nextVersion]} – reloading...`);
+    window.setTimeout(() => {
+      window.location.reload();
+    }, 600);
   };
 
   return (

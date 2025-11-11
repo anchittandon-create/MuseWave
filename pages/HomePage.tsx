@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useToast } from '../hooks/useToast';
 import { useGenerationQuota, type GenerationCategory } from '../src/contexts/GenerationQuotaContext';
+import { useAppVersion } from '../src/contexts/AppVersionContext';
 import type { Job, JobStatus, VideoStyle, FinalPlan, JobLog, MusicPlan, Section, DrumPattern, LeadMelodyNote } from '../lib/types';
 import * as geminiService from '../services/geminiService';
 import { startGeneration, subscribeToJob, fetchJobResult, type OrchestratorEvent } from '../services/orchestratorClient';
@@ -169,6 +170,7 @@ const HomePage = () => {
   const stageInfoRef = useRef<{ status: JobStatus; startedAt: number; baseline: number } | null>(null);
   const { toast } = useToast();
   const { canStartGeneration, recordGeneration, remaining } = useGenerationQuota();
+  const { version } = useAppVersion();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -467,7 +469,7 @@ const HomePage = () => {
       };
 
     console.info('[MuseWave] Triggering generation with payload', payload);
-    const response = await startGeneration(payload);
+    const response = await startGeneration(payload, { mode: version });
     recordGeneration(requiredCategories);
     console.info('[MuseWave] startGeneration resolved', response);
       const adaptedPlan = adaptPlan(response.plan, formState, seed);
@@ -513,7 +515,7 @@ const HomePage = () => {
           }
 
           if (event.status === 'complete') {
-            fetchJobResult(response.jobId)
+            fetchJobResult(response.jobId, { mode: version })
               .then(result => {
                 console.info('[MuseWave] Job result received', result);
                 if (result.error) {
@@ -608,7 +610,8 @@ const HomePage = () => {
         (err) => {
           console.error('SSE error', err);
           toast('Connection to orchestrator lost. Check backend logs.', 'error');
-        }
+        },
+        { mode: version }
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to start generation.';
@@ -619,7 +622,7 @@ const HomePage = () => {
       setTotalTimeLeft(formatSeconds(undefined));
       setStageTimeLeft(formatSeconds(undefined));
     }
-  }, [formState, toast, animateProgress, updateStageTimer, updateTotalEta, canStartGeneration, recordGeneration, remaining]);
+  }, [formState, toast, animateProgress, updateStageTimer, updateTotalEta, canStartGeneration, recordGeneration, remaining, version]);
 
   const handleCancel = () => {
     if (eventSourceRef.current) {

@@ -18,6 +18,20 @@ export type OrchestratorResult = {
   error?: string;
 };
 
+type GenerationMode = 'complete' | 'oss';
+
+type LocalJobState = {
+  status: string;
+  label: string;
+  progress: number;
+  plan: any;
+  result?: OrchestratorResult;
+  error?: string;
+  timers: Array<number | ReturnType<typeof setTimeout>>;
+};
+
+const LOCAL_JOB_STORE = new Map<string, LocalJobState>();
+
 type EnvRecord = Record<string, string | boolean | undefined>;
 
 const metaEnv: EnvRecord | undefined =
@@ -65,7 +79,130 @@ function getAuthToken(): string {
   );
 }
 
-export async function startGeneration(payload: Record<string, unknown>) {
+const localStages = [
+  { status: 'planning', label: 'Drafting lyrics with Cohere...', pct: 10, delay: 800 },
+  { status: 'generating-instruments', label: 'Building instrumental with MusicGen...', pct: 45, delay: 1600 },
+  { status: 'synthesizing-vocals', label: 'Rendering vocals with Coqui TTS...', pct: 70, delay: 1500 },
+  { status: 'mixing-mastering', label: 'Mastering mix with FFmpeg...', pct: 85, delay: 1200 },
+  { status: 'rendering-video', label: 'Generating spectrum visualizer...', pct: 95, delay: 1200 },
+];
+
+const setDelay = typeof window !== 'undefined' && window.setTimeout ? window.setTimeout.bind(window) : setTimeout;
+const clearDelay =
+  typeof window !== 'undefined' && window.clearTimeout ? window.clearTimeout.bind(window) : clearTimeout;
+
+const LOCAL_AUDIO_FALLBACK = '/test-create-45s.wav';
+const LOCAL_VIDEO_FALLBACK = {
+  lyric: '/test-lyric-video.mp4',
+  official: '/test-official-video.mp4',
+};
+
+function buildLocalPlan(payload: Record<string, any>) {
+  const prompt = (payload.musicPrompt as string) || 'Untitled MuseWave Track';
+  const title = prompt.length > 3 ? `${prompt.slice(0, 40)} Mix` : 'MuseWave OSS Mix';
+  const genres = Array.isArray(payload.genres) && payload.genres.length ? payload.genres : ['Electronic'];
+  const languages = Array.isArray(payload.languages) && payload.languages.length ? payload.languages : ['English'];
+
+  return {
+    title,
+    genre: genres[0],
+    bpm: 96,
+    key: 'C Minor',
+    overallStructure: 'Intro → Verse → Chorus → Bridge → Outro',
+    lyrics: payload.lyrics || `This is a free MuseWave OSS demo inspired by ${prompt}`,
+    randomSeed: Math.floor(Math.random() * 100000),
+    sections: [
+      { name: 'Intro', sectionType: 'intro', durationBars: 8, chordProgression: ['Cm', 'Ab', 'Eb', 'Bb'], lyrics: '' },
+      {
+        name: 'Verse',
+        sectionType: 'verse',
+        durationBars: 16,
+        chordProgression: ['Cm', 'Ab', 'Eb', 'Bb'],
+        lyrics: payload.lyrics || 'Feel the open-source groove tonight',
+      },
+      { name: 'Chorus', sectionType: 'chorus', durationBars: 16, chordProgression: ['Cm', 'Bb', 'Ab', 'Eb'], lyrics: payload.lyrics || '' },
+    ],
+    stems: {
+      vocals: true,
+      drums: true,
+      bass: true,
+      instruments: true,
+    },
+    languages,
+  };
+}
+
+function buildLocalResult(payload: Record<string, any>, plan: any): OrchestratorResult {
+  const generateVideo = Boolean(payload.generateVideo);
+  return {
+    audioUrl: LOCAL_AUDIO_FALLBACK,
+    videoUrls: generateVideo ? { ...LOCAL_VIDEO_FALLBACK } : null,
+    plan,
+  };
+}
+
+function scheduleLocalJob(jobId: string, payload: Record<string, any>, plan: any) {
+  const job = LOCAL_JOB_STORE.get(jobId);
+  if (!job) return;
+  job.status = 'planning';
+  job.label = localStages[0].label;
+  job.progress = 5;
+
+  let elapsed = 0;
+  localStages.forEach((stage) => {
+    elapsed += stage.delay;
+    const timer = setDelay(() => {
+      const current = LOCAL_JOB_STORE.get(jobId);
+      if (!current) return;
+      current.status = stage.status;
+      current.label = stage.label;
+      current.progress = stage.pct;
+    }, elapsed);
+    job.timers.push(timer);
+  });
+
+  const completionTimer = setDelay(() => {
+    const current = LOCAL_JOB_STORE.get(jobId);
+    if (!current) return;
+    current.status = 'complete';
+    current.label = 'Song ready! 🎶';
+    current.progress = 100;
+    current.result = buildLocalResult(payload, plan);
+  }, elapsed + 1200);
+  job.timers.push(completionTimer);
+}
+
+function startLocalGeneration(payload: Record<string, any>) {
+  const jobId = `oss-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+  const plan = buildLocalPlan(payload);
+  LOCAL_JOB_STORE.set(jobId, {
+    status: 'planning',
+    label: 'Drafting lyrics...',
+    progress: 5,
+    plan,
+    timers: [],
+  });
+  scheduleLocalJob(jobId, payload, plan);
+  return { jobId, plan };
+}
+
+function cleanupLocalJob(jobId: string) {
+  const job = LOCAL_JOB_STORE.get(jobId);
+  if (!job) return;
+  job.timers.forEach((timer) => clearDelay(timer as any));
+  LOCAL_JOB_STORE.delete(jobId);
+}
+
+
+export async function startGeneration(
+  payload: Record<string, unknown>,
+  options?: { mode?: GenerationMode }
+) {
+  const mode = options?.mode ?? 'complete';
+  if (mode === 'oss') {
+    return startLocalGeneration(payload);
+  }
+
   // Require backend URL to be configured
   const backendUrl = getBackendUrl();
   
@@ -118,8 +255,44 @@ export async function startGeneration(payload: Record<string, unknown>) {
 export function subscribeToJob(
   jobId: string,
   onEvent: (event: OrchestratorEvent) => void,
-  onError: (err: any) => void
+  onError: (err: any) => void,
+  options?: { mode?: GenerationMode }
 ) {
+  const mode = options?.mode ?? 'complete';
+  if (mode === 'oss') {
+    let closed = false;
+    const tick = () => {
+      if (closed) return;
+      const job = LOCAL_JOB_STORE.get(jobId);
+      if (!job) {
+        onError(new Error('Local job not found'));
+        return;
+      }
+      if (job.error) {
+        onEvent({ status: 'error', error: job.error });
+        closed = true;
+        cleanupLocalJob(jobId);
+        return;
+      }
+      onEvent({
+        status: job.status,
+        label: job.label,
+        pct: job.progress,
+      });
+      if (job.status === 'complete') {
+        closed = true;
+        return;
+      }
+      setDelay(tick, 1200);
+    };
+    tick();
+    return {
+      close() {
+        closed = true;
+      },
+    };
+  }
+
   let polling = true;
   let pollCount = 0;
   // Increased from 60 to 900 to support 30-minute generations (900 * 2s = 1800s = 30 min)
@@ -322,7 +495,25 @@ export function subscribeToJob(
   };
 }
 
-export async function fetchJobResult(jobId: string): Promise<OrchestratorResult> {
+export async function fetchJobResult(
+  jobId: string,
+  options?: { mode?: GenerationMode }
+): Promise<OrchestratorResult> {
+  const mode = options?.mode ?? 'complete';
+  if (mode === 'oss') {
+    const job = LOCAL_JOB_STORE.get(jobId);
+    if (!job) {
+      return { error: 'Job not found' };
+    }
+    if (job.result) {
+      return job.result;
+    }
+    if (job.error) {
+      return { error: job.error };
+    }
+    return { error: 'Job not complete' };
+  }
+
   const backendUrl = getBackendUrl();
 
   if (!backendUrl) {
