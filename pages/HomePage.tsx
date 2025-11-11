@@ -529,6 +529,11 @@ const HomePage = () => {
                   return;
                 }
 
+                // Show quota message if present
+                if (result.quotaExceeded || result.quotaMessage) {
+                  toast(result.quotaMessage || 'Quota exceeded for this feature. Further generations may be blocked.', 'error');
+                }
+
                 const updatedPlan = adaptPlan(result.plan, formState, seed);
                 const completedJob: Job = {
                   id: response.jobId,

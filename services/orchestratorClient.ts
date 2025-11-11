@@ -16,6 +16,8 @@ export type OrchestratorResult = {
   videoUrls?: Partial<Record<VideoStyle | string, string>> | null;
   plan?: any;
   error?: string;
+  quotaExceeded?: boolean;
+  quotaMessage?: string;
 };
 
 type GenerationMode = 'complete' | 'oss';
