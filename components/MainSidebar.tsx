@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 // FIX: Changed import path to point to .tsx file.
 import { cn } from '../lib/utils';
+import { useAuth } from '../src/contexts/AuthContext';
 
 // Icons
 const MusicIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -36,6 +37,8 @@ const navItems = [
 
 function MainSidebar() {
     const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const { logout, username } = useAuth();
+    const displayName = username || 'MuseWave User';
 
     const navLinkClasses = "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-foreground";
     const activeNavLinkClasses = "bg-secondary text-foreground";
@@ -68,10 +71,17 @@ function MainSidebar() {
                  <div className="flex items-center gap-3">
                     <UserCircleIcon className="h-10 w-10 text-muted-foreground" />
                     <div>
-                        <p className="font-semibold text-foreground">Anchit</p>
+                        <p className="font-semibold text-foreground">{displayName}</p>
                         <p className="text-xs text-muted-foreground">Product Manager</p>
                     </div>
                 </div>
+                <button
+                    type="button"
+                    onClick={logout}
+                    className="w-full rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 px-3 py-2 text-sm font-semibold transition-colors"
+                >
+                    Logout
+                </button>
                 <p className="text-xs text-muted-foreground text-center">
                     © 2025 MuseForge Pro. Powered by Google AI.
                 </p>

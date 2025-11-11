@@ -19,6 +19,14 @@ View your app in AI Studio: https://ai.studio/apps/drive/1kMZ30k-W6zUog4zKeV86Zg
 3. Run the app:
    `npm run dev`
 
+### Optional smoke test
+
+Vercel sets `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` so CI installs stay lightweight. If you want to run `npm run smoke` locally, install the browsers once:
+
+```
+npx playwright install chromium
+```
+
 ## Deploying
 
 Vercel (recommended):

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -81,11 +82,12 @@ export default function LoginPage() {
                 />
                 <button
                   type="button"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 bg-gray-800/40 px-2 py-1 rounded hover:bg-gray-700 focus:outline-none"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 bg-gray-800/60 p-1.5 rounded-md hover:bg-gray-700/80 focus:outline-none focus:ring-2 focus:ring-purple-500/60 transition"
                   onClick={() => setShowPassword((v) => !v)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
+                  title={showPassword ? "Hide password" : "Show password"}
                 >
-                  {showPassword ? "Hide" : "Show"}
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>

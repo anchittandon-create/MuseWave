@@ -1,7 +1,7 @@
 {
-  "buildCommand": "npm run build:vercel",
+  "buildCommand": "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm run build:vercel",
   "outputDirectory": "dist",
-  "installCommand": "npm install --legacy-peer-deps",
+  "installCommand": "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install --legacy-peer-deps",
   "headers": [
     {
       "source": "/(.*\\.wav)",
