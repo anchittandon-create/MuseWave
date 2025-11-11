@@ -1,13 +1,18 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './contexts/AuthContext';
 
 import MainSidebar from '../components/MainSidebar';
 import HomePage from '../pages/HomePage';
 import DashboardPage from '../pages/DashboardPage';
+import LoginPage from './pages/LoginPage';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import { Toaster } from '../components/Toaster';
 import { ToastProvider } from '../hooks/useToast';
 
-function App() {
+function AppContent() {
+  const { isAuthenticated, logout } = useAuth();
+
   React.useEffect(() => {
     console.info('[MuseWave] App mounted, rendering UI.');
   }, []);
@@ -15,48 +20,73 @@ function App() {
   return (
     <ToastProvider>
       <div className="min-h-screen w-full bg-background text-foreground flex">
-        <MainSidebar />
+        {isAuthenticated && <MainSidebar />}
         <main className="flex-1 flex flex-col">
-          <div className="bg-muted/40 text-muted-foreground px-6 py-2 text-xs">
-            <strong className="text-primary mr-2">MuseWave Debug:</strong>
-            UI shell mounted. If you still see only this message, check DevTools for [MuseWave] logs.
-          </div>
+          {isAuthenticated && (
+            <div className="bg-muted/40 text-muted-foreground px-6 py-2 text-xs flex justify-between items-center">
+              <span>
+                <strong className="text-primary mr-2">MuseWave Debug:</strong>
+                UI shell mounted. If you still see only this message, check DevTools for [MuseWave] logs.
+              </span>
+              <button
+                onClick={logout}
+                className="text-xs bg-red-500/20 hover:bg-red-500/30 text-red-400 px-2 py-1 rounded transition-colors"
+              >
+                Logout
+              </button>
+            </div>
+          )}
           <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <HomePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <DashboardPage />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/n8n-workflow"
               element={
-                <PlaceholderPage
-                  title="n8n Workflow"
-                  message="Display n8n workflow JSON here."
-                />
+                <ProtectedRoute>
+                  <PlaceholderPage
+                    title="n8n Workflow"
+                    message="Display n8n workflow JSON here."
+                  />
+                </ProtectedRoute>
               }
             />
             <Route
               path="/replication-prompt"
               element={
-                <PlaceholderPage
-                  title="Replication Prompt"
-                  message="This page would display the replication prompt."
-                />
+                <ProtectedRoute>
+                  <PlaceholderPage
+                    title="Replication Prompt"
+                    message="This page would display the replication prompt."
+                  />
+                </ProtectedRoute>
               }
             />
-            <Route
-              path="*"
-              element={
-                <PlaceholderPage
-                  title="Page Not Found"
-                  message="The route you visited does not exist. Try going back to the home page."
-                />
-              }
-            />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
       </div>
       <Toaster />
     </ToastProvider>
   );
+}
+
+function App() {
+  return <AppContent />;
 }
 
 type PlaceholderPageProps = {

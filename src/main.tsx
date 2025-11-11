@@ -1,8 +1,9 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
 import App from "./App";
-import "./index.css"; // optional, if you’re using Tailwind via postcss setup
+import "./index.css";
 
 console.info('[MuseWave] Bootstrapping main.tsx');
 
@@ -55,7 +56,9 @@ try {
   ReactDOM.createRoot(rootElement).render(
     <React.StrictMode>
       <BrowserRouter>
-        <App />
+        <AuthProvider>
+          <App />
+        </AuthProvider>
       </BrowserRouter>
     </React.StrictMode>
   );
