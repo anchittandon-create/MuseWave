@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useToast } from '../hooks/useToast';
+import { useGenerationQuota, type GenerationCategory } from '../src/contexts/GenerationQuotaContext';
 import type { Job, JobStatus, VideoStyle, FinalPlan, JobLog, MusicPlan, Section, DrumPattern, LeadMelodyNote } from '../lib/types';
 import * as geminiService from '../services/geminiService';
 import { startGeneration, subscribeToJob, fetchJobResult, type OrchestratorEvent } from '../services/orchestratorClient';
@@ -167,6 +168,7 @@ const HomePage = () => {
   const jobStartRef = useRef<number | null>(null);
   const stageInfoRef = useRef<{ status: JobStatus; startedAt: number; baseline: number } | null>(null);
   const { toast } = useToast();
+  const { canStartGeneration, recordGeneration, remaining } = useGenerationQuota();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -396,6 +398,19 @@ const HomePage = () => {
       return;
     }
 
+    const requiredCategories: GenerationCategory[] = ['song', 'audio'];
+    if (formState.generateVideo) {
+      requiredCategories.push('video');
+    }
+    if (!canStartGeneration(requiredCategories)) {
+      const exhausted = requiredCategories
+        .filter(type => remaining[type] !== null && (remaining[type] ?? 0) <= 0)
+        .map(type => type === 'song' ? 'song' : type);
+      const exhaustedList = exhausted.length ? exhausted.join(' & ') : 'requested assets';
+      toast(`Quota reached for ${exhaustedList}. Switch to Free Open Source Version or wait for reset.`, 'error');
+      return;
+    }
+
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
       eventSourceRef.current = null;
@@ -453,6 +468,7 @@ const HomePage = () => {
 
     console.info('[MuseWave] Triggering generation with payload', payload);
     const response = await startGeneration(payload);
+    recordGeneration(requiredCategories);
     console.info('[MuseWave] startGeneration resolved', response);
       const adaptedPlan = adaptPlan(response.plan, formState, seed);
 
@@ -603,7 +619,7 @@ const HomePage = () => {
       setTotalTimeLeft(formatSeconds(undefined));
       setStageTimeLeft(formatSeconds(undefined));
     }
-  }, [formState, toast, animateProgress, updateStageTimer, updateTotalEta]);
+  }, [formState, toast, animateProgress, updateStageTimer, updateTotalEta, canStartGeneration, recordGeneration, remaining]);
 
   const handleCancel = () => {
     if (eventSourceRef.current) {

@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AppVersionProvider } from "./contexts/AppVersionContext";
+import { GenerationQuotaProvider } from "./contexts/GenerationQuotaContext";
 import App from "./App";
 import "./index.css";
 
@@ -59,7 +60,9 @@ try {
       <BrowserRouter>
         <AuthProvider>
           <AppVersionProvider>
-            <App />
+            <GenerationQuotaProvider>
+              <App />
+            </GenerationQuotaProvider>
           </AppVersionProvider>
         </AuthProvider>
       </BrowserRouter>

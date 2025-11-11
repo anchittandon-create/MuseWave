@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
-export type AppVersion = 'current' | 'oss';
+export type AppVersion = 'complete' | 'oss';
 
 type AppVersionContextValue = {
   version: AppVersion;
@@ -11,19 +11,26 @@ const STORAGE_KEY = 'musewave_app_version';
 
 const AppVersionContext = createContext<AppVersionContextValue | undefined>(undefined);
 
+const mapStoredValue = (value: string | null): AppVersion | null => {
+  if (value === 'complete' || value === 'oss') return value;
+  if (value === 'current') return 'complete';
+  return null;
+};
+
 const getInitialVersion = (): AppVersion => {
   if (typeof window === 'undefined') {
-    return 'current';
+    return 'complete';
   }
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored === 'current' || stored === 'oss') {
-      return stored;
+    const mapped = mapStoredValue(stored);
+    if (mapped) {
+      return mapped;
     }
   } catch (err) {
     console.warn('[AppVersion] Failed to read from storage', err);
   }
-  return 'current';
+  return 'complete';
 };
 
 export function AppVersionProvider({ children }: { children: React.ReactNode }) {
