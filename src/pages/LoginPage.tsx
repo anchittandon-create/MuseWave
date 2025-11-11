@@ -7,6 +7,7 @@ import Input from '../../components/ui/Input';
 export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -66,17 +67,27 @@ export default function LoginPage() {
               <label htmlFor="password" className="text-sm font-medium text-gray-200 block">
                 Password
               </label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password"
-                required
-                disabled={isLoading}
-                className="bg-gray-800/50 border-gray-700 text-white placeholder:text-gray-500 focus:border-purple-500 focus:ring-purple-500"
-                autoComplete="current-password"
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter password"
+                  required
+                  disabled={isLoading}
+                  className="bg-gray-800/50 border-gray-700 text-white placeholder:text-gray-500 focus:border-purple-500 focus:ring-purple-500 pr-10"
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 bg-gray-800/40 px-2 py-1 rounded hover:bg-gray-700 focus:outline-none"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
             </div>
 
             {error && (
@@ -93,12 +104,6 @@ export default function LoginPage() {
               {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
-
-          {/* Demo credentials hint */}
-          <div className="text-center text-xs text-gray-500 border-t border-gray-700 pt-4">
-            <p>Demo credentials:</p>
-            <p className="text-gray-400">Username: Anchit • Password: AnchitAnya</p>
-          </div>
         </div>
       </div>
     </div>
