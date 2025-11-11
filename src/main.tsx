@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { AppVersionProvider } from "./contexts/AppVersionContext";
 import App from "./App";
 import "./index.css";
 
@@ -57,7 +58,9 @@ try {
     <React.StrictMode>
       <BrowserRouter>
         <AuthProvider>
-          <App />
+          <AppVersionProvider>
+            <App />
+          </AppVersionProvider>
         </AuthProvider>
       </BrowserRouter>
     </React.StrictMode>
