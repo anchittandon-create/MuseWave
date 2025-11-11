@@ -18,9 +18,56 @@ export type OrchestratorResult = {
   error?: string;
 };
 
+type EnvRecord = Record<string, string | boolean | undefined>;
+
+const metaEnv: EnvRecord | undefined =
+  typeof import.meta !== 'undefined'
+    ? (import.meta as unknown as { env?: EnvRecord }).env
+    : undefined;
+
+const nodeProcess: { env?: Record<string, string | undefined> } | undefined =
+  typeof globalThis !== 'undefined' && 'process' in globalThis
+    ? (globalThis as any).process
+    : undefined;
+
+function readEnv(key: string): string | undefined {
+  const value =
+    (metaEnv && (metaEnv[key] as string | undefined)) ??
+    nodeProcess?.env?.[key];
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed.length ? trimmed : undefined;
+  }
+  return undefined;
+}
+
+function getBackendUrl(): string | undefined {
+  const candidate =
+    readEnv('VITE_BACKEND_NEO_URL') ||
+    readEnv('VITE_BACKEND_URL') ||
+    readEnv('BACKEND_NEO_URL') ||
+    (typeof window !== 'undefined'
+      ? (window as any).__BACKEND_NEO_URL
+      : undefined);
+
+  if (typeof candidate === 'string') {
+    return candidate.replace(/\/$/, '');
+  }
+  return undefined;
+}
+
+function getAuthToken(): string {
+  return (
+    readEnv('VITE_API_KEY') ||
+    readEnv('VITE_BACKEND_API_KEY') ||
+    readEnv('DEFAULT_API_KEY') ||
+    ''
+  );
+}
+
 export async function startGeneration(payload: Record<string, unknown>) {
   // Require backend URL to be configured
-  const backendUrl = process.env.VITE_BACKEND_NEO_URL || process.env.BACKEND_NEO_URL;
+  const backendUrl = getBackendUrl();
   
   if (!backendUrl) {
     throw new Error(
@@ -33,12 +80,17 @@ export async function startGeneration(payload: Record<string, unknown>) {
   console.info(`[MuseWave] Connecting to backend: ${backendUrl}`);
   
   try {
+    const authToken = getAuthToken();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (authToken) {
+      headers.Authorization = `Bearer ${authToken}`;
+    }
+
     const response = await fetch(`${backendUrl}/api/generate/pipeline`, {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.VITE_API_KEY || process.env.DEFAULT_API_KEY || ''}`
-      },
+      headers,
       body: JSON.stringify(payload),
     });
     
@@ -126,7 +178,7 @@ export function subscribeToJob(
     }
     
     // Real backend polling only - no mock fallback
-    const backendUrl = process.env.VITE_BACKEND_NEO_URL || process.env.BACKEND_NEO_URL;
+    const backendUrl = getBackendUrl();
     
     if (!backendUrl) {
       onError(new Error('Backend URL not configured. Set VITE_BACKEND_NEO_URL environment variable.'));
@@ -135,11 +187,15 @@ export function subscribeToJob(
     }
     
     try {
+      const authToken = getAuthToken();
+      const headers: Record<string, string> = {};
+      if (authToken) {
+        headers.Authorization = `Bearer ${authToken}`;
+      }
+
       // Call backend-neo jobs endpoint
       const response = await fetch(`${backendUrl}/api/jobs/${jobId}`, {
-        headers: {
-          'Authorization': `Bearer ${process.env.VITE_API_KEY || process.env.DEFAULT_API_KEY || ''}`
-        }
+        headers,
       });
       
       if (!response.ok) {
@@ -267,7 +323,7 @@ export function subscribeToJob(
 }
 
 export async function fetchJobResult(jobId: string): Promise<OrchestratorResult> {
-  const backendUrl = process.env.VITE_BACKEND_NEO_URL || process.env.BACKEND_NEO_URL;
+  const backendUrl = getBackendUrl();
 
   if (!backendUrl) {
     return { 
@@ -276,10 +332,14 @@ export async function fetchJobResult(jobId: string): Promise<OrchestratorResult>
   }
 
   try {
+    const authToken = getAuthToken();
+    const headers: Record<string, string> = {};
+    if (authToken) {
+      headers.Authorization = `Bearer ${authToken}`;
+    }
+
     const response = await fetch(`${backendUrl}/api/jobs/${jobId}`, {
-      headers: {
-        'Authorization': `Bearer ${process.env.VITE_API_KEY || process.env.DEFAULT_API_KEY || ''}`
-      }
+      headers,
     });
     
     if (!response.ok) {
