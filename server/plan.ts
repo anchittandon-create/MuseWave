@@ -35,7 +35,7 @@ export async function generatePlan(input: Input): Promise<Plan> {
     try {
       const { GoogleGenerativeAI } = await import('@google/generative-ai');
       const genAI = new GoogleGenerativeAI(geminiKey);
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro-latest' });
       const prompt = `
 Generate STRICT JSON, no prose.
 Schema: {"bpm": number, "key": string, "scale": "minor"|"major",

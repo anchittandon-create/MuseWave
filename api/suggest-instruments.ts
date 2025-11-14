@@ -58,7 +58,7 @@ export default async function handler(
 async function suggestWithGemini(context: any): Promise<string[]> {
   const { GoogleGenerativeAI } = await import('@google/generative-ai');
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY!);
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
 
   const prompt = `Suggest 4-5 musical instruments/sounds for this music creation context:
 

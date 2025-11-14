@@ -36,7 +36,7 @@ if (cached) return cached;
 
 **Strategy:**
 - Use `gemini-1.5-flash-8b` for simple suggestions (50% cheaper)
-- Use `gemini-1.5-flash` only for complex music planning
+- Use `gemini-1.5-flash-latest` only for complex music planning
 
 **Savings:**
 - **50% cost reduction** on suggestion API calls

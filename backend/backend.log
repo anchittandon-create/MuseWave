@@ -2,7 +2,7 @@
 > musewave-backend@1.0.0 dev
 > tsx watch src/index.ts
 
-[MuseWave] Gemini initialised with default model "gemini-1.5-flash" and cheap model "gemini-1.5-flash-8b"
+[MuseWave] Gemini initialised with default model "gemini-1.5-flash-latest" and cheap model "gemini-1.5-flash-8b"
 DEBUG: app.prisma exists = true
 DEBUG: processQueue called, running = true
 DEBUG: About to enter main try block

@@ -227,7 +227,7 @@ const AUDIO_CONFIG = {
 
 ```typescript
 const GEMINI_CONFIG = {
-  model: 'gemini-1.5-flash',
+  model: 'gemini-1.5-flash-latest',
   maxTokens: 2048,
   temperature: 0.7,
   timeout: 30000

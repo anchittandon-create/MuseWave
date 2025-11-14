@@ -470,7 +470,6 @@ const HomePage = () => {
 
     console.info('[MuseWave] Triggering generation with payload', payload);
     const response = await startGeneration(payload, { mode: version });
-    recordGeneration(requiredCategories);
     console.info('[MuseWave] startGeneration resolved', response);
       const adaptedPlan = adaptPlan(response.plan, formState, seed);
 
@@ -569,6 +568,7 @@ const HomePage = () => {
                 jobStartRef.current = null;
                 stageInfoRef.current = null;
                 saveJobToHistory(completedJob);
+                recordGeneration(requiredCategories);
               })
               .catch(error => {
                 const message = error instanceof Error ? error.message : 'Failed to fetch job result';

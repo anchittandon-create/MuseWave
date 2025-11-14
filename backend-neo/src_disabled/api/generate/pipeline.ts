@@ -6,7 +6,7 @@ import path from 'path';
 
 const execAsync = promisify(exec);
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
 
 export const pipelineRoute: FastifyPluginAsync = async (app) => {
   app.post('/pipeline', async (request, reply) => {

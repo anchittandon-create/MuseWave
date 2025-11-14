@@ -105,7 +105,7 @@ export default async function handler(
 async function generatePlanWithGemini(request: any): Promise<MusicPlan> {
   const { GoogleGenerativeAI } = await import('@google/generative-ai');
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY!);
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
 
   const creativityNote = request.creativitySeed ? `\nCreativity Seed: ${request.creativitySeed} (use this for variation in your response)` : '';
 

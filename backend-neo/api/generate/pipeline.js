@@ -80,7 +80,7 @@ async function processJob(jobId, payload) {
     if (process.env.GEMINI_API_KEY) {
       try {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
 
         const planPrompt = `Generate a detailed music plan for a song with the following details:
 - Prompt: ${payload.musicPrompt}

@@ -124,7 +124,7 @@ const cheapModelName = process.env.GEMINI_MODEL_CHEAP || 'gemini-1.5-flash-8b';
 const defaultModelName =
   process.env.USE_CHEAP_MODEL_ONLY === 'true'
     ? cheapModelName
-    : process.env.GEMINI_MODEL_EXPENSIVE || 'gemini-1.5-flash';
+    : process.env.GEMINI_MODEL_EXPENSIVE || 'gemini-1.5-flash-latest';
 
 let genAI: GoogleGenerativeAI | null = null;
 let defaultModel: GenerativeModel | null = null;

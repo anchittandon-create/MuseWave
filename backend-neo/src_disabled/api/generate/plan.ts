@@ -2,7 +2,7 @@ import { FastifyPluginAsync } from 'fastify';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
 
 export const planRoute: FastifyPluginAsync = async (app) => {
   app.post('/plan', async (request, reply) => {
