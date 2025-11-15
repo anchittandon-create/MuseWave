@@ -73,13 +73,4 @@ try {
   showFatalError(`Fatal render error:\n\n${err && err.stack ? err.stack : String(err)}`);
 }
 
-// Register service worker for autoupdates
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then((registration) => {
-      console.log('SW registered: ', registration);
-    }).catch((registrationError) => {
-      console.log('SW registration failed: ', registrationError);
-    });
-  });
-}
+// Offline caching caused stale bundles/blank screens, so skip service worker registration.

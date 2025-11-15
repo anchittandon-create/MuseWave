@@ -10,12 +10,16 @@ const ConfigSchema = z.object({
   PROFANITY_DENYLIST: z
     .string()
     .default('fuck,shit,bitch')
-    .transform((value) =>
-      value
+    .transform((value) => {
+      if (typeof value !== 'string') {
+        return [];
+      }
+      return value
         .split(',')
+        .map((word) => (typeof word === 'string' ? word : String(word ?? '')))
         .map((word) => word.trim().toLowerCase())
-        .filter(Boolean)
-    ),
+        .filter(Boolean);
+    }),
   USE_S3: z
     .string()
     .optional()
